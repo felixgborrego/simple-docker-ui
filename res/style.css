@@ -1,0 +1,11 @@
+i.glyphicon3x {
+    font-size: 2em;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 30px;
+  background-color: #F0F0F0;
+ }

@@ -1,0 +1,24 @@
+{
+  "name": "Manager for Docker",
+  "description": "Manager for Docker",
+  "version": "0.0.0.1",
+  "manifest_version": 2,
+  "icons": {
+    "128": "icon_128.png"
+  },
+  "permissions": [
+    "<all_urls>",
+    "http://*/*",
+    "https://*/*",
+    "https://cdnjs.cloudflare.com/*",
+    "https://ajax.googleapis.com/*",
+    "https://maxcdn.bootstrapcdn.com/*"
+  ],
+  "content_security_policy": "script-src 'self' https://cdnjs.cloudflare.com https://ajax.googleapis.com https://maxcdn.bootstrapcdn.com; object-src 'self'",
+  "app": {
+    "launch": {
+      "container": "tab",
+      "local_path": "index.html"
+    }
+  }
+}
