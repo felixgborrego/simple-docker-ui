@@ -20,6 +20,4 @@ object SettingsPageRender {
     dom
   }).buildU
 
-
-
 }

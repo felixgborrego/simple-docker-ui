@@ -21,10 +21,10 @@ object Header {
   def apply(path: Path) = {
 
     val props = Props(
-      container = path == MainRouter.containersPage.path,
+      container = path == MainRouter.containersPageLoc.path,
       home = path == MainRouter.root.path,
-      images = path == MainRouter.imagesPage.path,
-      settings = path == MainRouter.settingsPage.path
+      images = path == MainRouter.imagesPageLoc.path,
+      settings = path == MainRouter.settingsPageLoc.path
     )
 
     HeaderRender.component(props)

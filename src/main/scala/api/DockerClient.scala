@@ -23,9 +23,33 @@ case class DockerClient(connection: Connection) {
     } yield DockerMetadata(connection, info, version, containers)
   }
 
+  def containersInfo(): Future[ContainersInfo] = for {
+    r <- containers(all = false)
+    all  <-containers(all = true)
+  } yield ContainersInfo(r, all)
+
+
+
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-a-container
+  def containerInfo(containerId:String): Future[ContainerInfo] ={
+    val url = connection.url + "/containers/"+containerId+"/json"
+    Ajax.get(url).map { xhr =>
+      println("[dockerClient.containerInfo] return: " + xhr.responseText)
+      read[ContainerInfo](xhr.responseText)
+    }
+  }
+
+  def top(containerId:String): Future[ContainerTop] ={
+    val url = connection.url + "/containers/"+containerId+"/top"
+    Ajax.get(url).map { xhr =>
+      println("[dockerClient.top] return: " + xhr.responseText)
+      read[ContainerTop](xhr.responseText)
+    }
+  }
+
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
-  def containers(all: Boolean): Future[Seq[Container]] = {
-    val url = connection.url + "/containers/json"
+  private def containers(all: Boolean): Future[Seq[Container]] = {
+    val url = connection.url + "/containers/json?all=" + all
     Ajax.get(url).map { xhr =>
       println("[dockerClient.containers] return: " + xhr.responseText)
       read[Seq[Container]](xhr.responseText)

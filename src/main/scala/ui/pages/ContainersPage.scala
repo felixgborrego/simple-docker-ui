@@ -3,7 +3,7 @@ package ui.pages
 import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{Connection, Container}
+import model.{ContainersInfo, Connection, Container}
 import ui.Links
 import ui.widgets.Alert
 import util.logger._
@@ -12,20 +12,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ContainersPage {
 
-  case class State(containers: Seq[Container] = Seq.empty, error: Option[String] = None)
+  case class State(info: ContainersInfo = ContainersInfo(), error: Option[String] = None)
 
   case class Props(connection: Connection)
 
   case class Backend(t: BackendScope[Props, State]) {
 
     def willStart(): Unit = {
-      // get running containers
-      DockerClient(t.props.connection).containers(all = false).map { containers =>
-        t.modState(s => State(containers))
+      DockerClient(t.props.connection).containersInfo().map { info =>
+        t.modState(s => State(info))
       }.onFailure {
         case ex: Exception =>
           log.error("Unable to get containers", ex)
-          t.modState(s => State(Seq.empty, Some(ex.getMessage)))
+          t.modState(s => State(ContainersInfo(), Some(ex.getMessage)))
       }
     }
   }
@@ -40,20 +39,55 @@ object ContainersPageRender {
 
   import ui.pages.ContainersPage._
 
-  def dom(containers: Seq[Container]) = <.div("Containers TODO")
-
   val component = ReactComponentB[Props]("ContainerPage")
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
     if (S.error.isDefined) {
-      Alert("Unable to connect to " + P.connection.url, S.error.get, Some(Links.settingsLink))
+      Alert("Internal error " + P.connection.url, S.error.get, Some(Links.settingsLink))
     } else {
-      dom(S.containers)
+      vdom(S)
     }
-
   }).componentWillMount(_.backend.willStart())
     .build
+
+  def vdom(state: State) = <.div(
+    table("Container Running", state.info.running),
+    table("History", state.info.history)
+  )
+
+  def table(title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-11",
+    <.div(^.className := "panel panel-default  bootcards-summary",
+      <.div(^.className := "panel-heading clearfix",
+        <.h3(^.className := "panel-title pull-left")(title),
+        <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#")
+      ),
+      <.table(^.className := "table",
+        <.thead(
+          <.tr(
+            <.th("Id"),
+            <.th("Image"),
+            <.th("Command"),
+            <.th("Ports"),
+            <.th("Created"),
+            <.th("Status")
+          )
+        ),
+        <.tbody(
+          containers.map { c =>
+            <.tr(^.className := "info",
+              <.td(Links.containerLink(c.Id)(c.id)),
+              <.td(c.Image),
+              <.td(c.Command),
+              <.td(c.ports.map(<.div(_))),
+              <.td(c.created),
+              <.td(c.Status)
+            )
+          }
+        )
+      )
+    )
+  )
 
 
 }

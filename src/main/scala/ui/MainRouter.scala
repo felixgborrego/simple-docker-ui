@@ -13,12 +13,16 @@ object MainRouter extends RoutingRules {
 
 
   val root = register(rootLocation(HomePage()))
-  val settingsPage = register(location("#settings", SettingsPage()))
-  val containersPage = register(location("#containers", ContainersPage()))
-  val imagesPage = register(location("#images", ImagesPage()))
+  val settingsPageLoc = register(location("#settings", SettingsPage()))
+  val containersPageLoc = register(location("#containers", ContainersPage()))
+  val imagesPageLoc = register(location("#images", ImagesPage()))
+
+  private val containerPathMatch = "^#containers/(.+)$".r
+  register(parser { case containerPathMatch(n) => n }.location(n => ContainerPage(n)))
+  val containerPageLoc = dynLink[String](n => s"#containers/$n")
 
   // initialize router and its React component
-  val router = routingEngine(baseUrl)
+  val router = routingEngine(baseUrl, Router.consoleLogger)
   val routerComponent = Router.component(router)
 
 
@@ -27,14 +31,7 @@ object MainRouter extends RoutingRules {
   override protected def interceptRender(i: InterceptionR): ReactElement = {
     <.div(
       Header(i.loc.path),
-      i.element,
-      <.footer(^.className := "footer")(
-        <.div(^.className := "container",
-          <.p("Manager for Docker. Prototype built using scala.js & React.js! ",
-            <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app")("https://github.com/felixgborrego/docker-ui-chrome-app")
-          )
-        )
-      )
+      i.element
     )
   }
 
@@ -46,9 +43,11 @@ object Links {
 
   def homeLink = router.link(root)
 
-  def settingsLink = router.link(settingsPage)
+  def settingsLink = router.link(settingsPageLoc)
 
-  def containersLink = router.link(containersPage)
+  def containersLink = router.link(containersPageLoc)
 
-  def imagesLink = router.link(imagesPage)
+  def imagesLink = router.link(imagesPageLoc)
+
+  def containerLink(containerId: String) = router.link(containerPageLoc(containerId))
 }

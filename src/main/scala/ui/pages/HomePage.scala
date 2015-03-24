@@ -5,8 +5,8 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.{Connection, DockerMetadata}
 import ui.Links
+import ui.widgets.{Alert, ContainersCard, InfoCard}
 import util.logger._
-import ui.widgets.{Alert, ContainersCard, ServerInfoCard}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -24,7 +24,7 @@ object HomePage {
         t.modState(s => State(Some(docker)))
       }.onFailure {
         case ex: Exception =>
-          log.error("Unable to get Metadata",ex)
+          log.error("Unable to get Metadata", ex)
           t.modState(s => State(None, Some(ex.getMessage)))
       }
     }
@@ -46,24 +46,28 @@ object HomePageRender {
     .backend(new Backend(_))
     .render((P, S, B) => {
     if (S.error.isDefined) {
-      Alert("Unable to connect to " +  P.connection.url,S.error.get,Some(Links.settingsLink))
+      Alert("Unable to connect to " + P.connection.url, S.error.get, Some(Links.settingsLink))
     } else {
       S.info match {
         case None =>
-           Alert("Unable to connect to ",P.connection.url,Some(Links.settingsLink))
+          Alert("Unable to connect to ", P.connection.url, Some(Links.settingsLink))
           //} else {
           <.div("Connecting... to " + P.connection.url)
         //}
         case Some(info) => vdom(info)
       }
     }
-
   }).componentWillMount(_.backend.willStart())
     .build
 
-  def vdom(docker: DockerMetadata) = <.div(
-    ContainersCard(docker),
-    ServerInfoCard(docker)
-  )
-
+  def vdom(docker: DockerMetadata) = {
+    val info = Map(
+      "Connected to" -> docker.connection.url,
+      "Version" -> (docker.version.Version + "(api: " + docker.version.ApiVersion + ")")
+    )
+    <.div(
+      ContainersCard(docker),
+      InfoCard(info, InfoCard.SMALL, Some("System"))
+    )
+  }
 }
