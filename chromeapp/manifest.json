@@ -1,5 +1,5 @@
 {
-  "name": "Docker ui for Chrome",
+  "name": "Docker ui",
   "description": "Simple Docker ui",
   "version": "0.0.0.4",
   "manifest_version": 2,
