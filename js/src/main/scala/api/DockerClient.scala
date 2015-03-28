@@ -33,9 +33,10 @@ case class DockerClient(connection: Connection) {
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-a-container
   def containerInfo(containerId:String): Future[ContainerInfo] ={
     val url = connection.url + "/containers/"+containerId+"/json"
+    println("url:" + url)
     Ajax.get(url).map { xhr =>
       println("[dockerClient.containerInfo] return: " + xhr.responseText)
-      read[ContainerInfo](xhr.responseText)
+       read[ContainerInfo](xhr.responseText)
     }
   }
 

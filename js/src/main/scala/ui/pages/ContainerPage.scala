@@ -3,9 +3,11 @@ package ui.pages
 import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{Connection, ContainerInfo, ContainerTop}
+import model.{ConnectionError, Connection, ContainerInfo, ContainerTop}
+import ui.Workbench
 
 import ui.widgets.{Alert, InfoCard, TableCard}
+import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -19,10 +21,19 @@ object ContainerPage {
   case class Backend(t: BackendScope[Props, State]) {
 
     def willStart(): Unit = {
-      for {
+      val result = for {
         info <- DockerClient(t.props.connection).containerInfo(t.props.containerId)
         top <- DockerClient(t.props.connection).top(t.props.containerId)
-      } yield t.modState(s => State(Some(info), Some(top)))
+      } yield {
+        t.modState(s => State(Some(info), Some(top)))
+      }
+
+      result.onFailure{
+        case ex: Exception =>
+          log.error("Unable to get Metadata", ex)
+          Workbench.error(ConnectionError(ex.getMessage))
+      }
+
     }
   }
 
@@ -45,7 +56,8 @@ object ContainerPageRender {
     .render((P, S, B) => {
       <.div(
         S.info.map(vdomInfo),
-        S.top.map(vdomTop), vdomLogs()
+        S.top.map(vdomTop),
+        vdomLogs()
       )
     }).componentWillMount(_.backend.willStart())
     .build
@@ -58,9 +70,9 @@ object ContainerPageRender {
       "Status" -> "---"
     )
     val executionInfo = Map(
-      "Command" -> containerInfo.Config.Cmd.mkString(" "),
+      "Command" -> containerInfo.Config.cmd.mkString(" "),
       "Arguments" -> containerInfo.Args.mkString(" "),
-      "Environment" -> containerInfo.Config.Env.mkString(" "),
+      "Environment" -> containerInfo.Config.env.mkString(" "),
       "WorkingDir" -> containerInfo.Config.WorkingDir
     )
     val networkInfo = Map(

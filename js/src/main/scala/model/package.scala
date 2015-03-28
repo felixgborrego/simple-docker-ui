@@ -77,8 +77,11 @@ package object model {
   }
 
   case class ContainerConfig(AttachStderr: Boolean, AttachStdin: Boolean, AttachStdout: Boolean,
-                             Cmd: Seq[String] = Seq.empty, Entrypoint: String = "", Env: Seq[String] = Seq.empty,
-                             Hostname: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String)
+                             Cmd: Seq[String] = Seq.empty, Entrypoint: Seq[String] = Seq.empty, Env: Seq[String] = Seq.empty,
+                             Hostname: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String) {
+    val cmd = if(Cmd==null) Seq.empty else Cmd // Workaround, Docker may return null
+    val env = if(Env==null) Seq.empty else Env
+  }
 
   case class Port(Type: String, IP: String = "", PrivatePort: Int = 0, PublicPort: Int = 0)
 

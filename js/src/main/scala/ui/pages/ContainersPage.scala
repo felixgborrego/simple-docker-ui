@@ -52,7 +52,7 @@ object ContainersPageRender {
     table(false,"History", state.info.history)
   )
 
-  def table(showLinks: Boolean, title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-11",
+  def table(showLinks: Boolean, title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-12",
     <.div(^.className := "panel panel-default  bootcards-summary",
       <.div(^.className := "panel-heading clearfix",
         <.h3(^.className := "panel-title pull-left")(title),
