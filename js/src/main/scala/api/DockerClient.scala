@@ -48,6 +48,15 @@ case class DockerClient(connection: Connection) {
     }
   }
 
+  //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-images
+  def images():Future[Seq[Image]] ={
+    val url = connection.url + "/images/json"
+    Ajax.get(url).map { xhr =>
+      println("[dockerClient.images] return: " + xhr.responseText)
+      read[Seq[Image]](xhr.responseText)
+    }
+  }
+
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
   private def containers(all: Boolean): Future[Seq[Container]] = {
     val url = connection.url + "/containers/json?all=" + all

@@ -23,7 +23,7 @@ object TableCardRender {
     ).build
 
   def vdom(props: Props) = {
-    val keys = props.data.head.keys.toSeq
+    val keys = props.data.headOption.map(_.keys.toSeq)getOrElse(Seq.empty)
 
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",

@@ -2,19 +2,18 @@ import util.momentJs.Moment
 
 package object model {
 
-  trait WorkbenchError{
-    def msg:String
-    def goToSettings:Boolean
+  trait WorkbenchError {
+    def msg: String
+    def goToSettings: Boolean
   }
 
-  case class ConnectionError(msg:String) extends WorkbenchError {
+  case class ConnectionError(msg: String) extends WorkbenchError {
     val goToSettings = true
   }
 
   case class GenericError(msg: String) extends WorkbenchError {
     val goToSettings = false
   }
-
 
   case class Connection(url: String)
 
@@ -46,7 +45,7 @@ package object model {
 
 
   case class Container(Command: String, Created: Int, Id: String, Image: String, Status: String, Names: Seq[String], Ports: Seq[Port]) {
-    def id = Id.take(12)
+    def id = subId(Id)
 
     def created = {
       val timeStamp = Created.toLong * 1000L
@@ -66,9 +65,9 @@ package object model {
 
   case class ContainerInfo(Args: Seq[String], Id: String, Image: String, Name: String, Path: String, Created: String,
                            Config: ContainerConfig) {
-    def id = Id.take(12)
+    def id = subId(Id)
 
-    def image = Image.take(12)
+    def image = subId(Image)
 
     def created = {
       Moment(Created).fromNow()
@@ -79,12 +78,38 @@ package object model {
   case class ContainerConfig(AttachStderr: Boolean, AttachStdin: Boolean, AttachStdout: Boolean,
                              Cmd: Seq[String] = Seq.empty, Entrypoint: Seq[String] = Seq.empty, Env: Seq[String] = Seq.empty,
                              Hostname: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String) {
-    val cmd = if(Cmd==null) Seq.empty else Cmd // Workaround, Docker may return null
-    val env = if(Env==null) Seq.empty else Env
+
+    // Workaround, Docker may return null
+    val cmd = if (Cmd == null) Seq.empty else Cmd
+    val env = if (Env == null) Seq.empty else Env
   }
 
   case class Port(Type: String, IP: String = "", PrivatePort: Int = 0, PublicPort: Int = 0)
 
   case class ContainerTop(Titles: Seq[String], Processes: Seq[Seq[String]])
 
+
+  case class Image(Created: Int, Id: String, ParentId: String, RepoTags: Seq[String], Size: Int, VirtualSize: Int) {
+    def created = {
+      val timeStamp = Created.toLong * 1000L
+      Moment(timeStamp).fromNow()
+    }
+
+    def id = subId(Id)
+
+    def virtualSize = bytesToSize(VirtualSize)
+  }
+
+  def bytesToSize(bytes:Int) = {
+    val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB");
+    if (bytes == 0) {
+     "0 Byte"
+    } else {
+      val i = Math.floor(Math.log(bytes) / Math.log(1024)).toInt
+      Math.round(bytes / Math.pow(1024, i)) + " " + Sizes(i)
+    }
+
+  }
+
+  def subId(id: String) = id.take(12)
 }
