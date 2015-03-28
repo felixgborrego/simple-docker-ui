@@ -48,8 +48,8 @@ object ContainersPageRender {
     .build
 
   def vdom(state: State) = <.div(
-    table(true,"Container Running", state.info.running),
-    table(false,"History", state.info.history)
+    table(true, "Container Running", state.info.running),
+    table(false, "History", state.info.history)
   )
 
   def table(showLinks: Boolean, title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-12",
@@ -61,7 +61,7 @@ object ContainersPageRender {
       <.table(^.className := "table table-hover",
         <.thead(
           <.tr(
-            <.th("Id"),
+            Some(<.th("Id")).filter(_ => showLinks),
             <.th("Image"),
             <.th("Command"),
             <.th("Ports"),
@@ -72,7 +72,7 @@ object ContainersPageRender {
         <.tbody(
           containers.map { c =>
             <.tr(
-              <.td(if(showLinks) Workbench.link(ContainerPage(c.Id))(c.id) else None),
+              Some(<.td(Workbench.link(ContainerPage(c.Id))(c.id))).filter(_ => showLinks),
               <.td(c.Image),
               <.td(c.Command),
               <.td(c.ports.map(<.div(_))),
