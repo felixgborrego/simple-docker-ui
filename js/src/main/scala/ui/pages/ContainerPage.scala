@@ -4,7 +4,7 @@ import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.{Connection, ContainerInfo, ContainerTop}
-import ui.Links
+
 import ui.widgets.{Alert, InfoCard, TableCard}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,8 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object ContainerPage {
 
   case class State(info: Option[ContainerInfo] = None,
-                   top: Option[ContainerTop] = None,
-                   error: Option[String] = None)
+                   top: Option[ContainerTop] = None)
 
   case class Props(connection: Connection, containerId: String)
 
@@ -27,10 +26,12 @@ object ContainerPage {
     }
   }
 
-
-  def apply(containerId: String) = {
-    val props = Props(ConfigStore.connection, containerId)
-    ContainerPageRender.component(props)
+  def apply(containerId: String) = new Page{
+    val id = ContainersPage.id
+    def component() = {
+      val props = Props(ConfigStore.connection, containerId)
+      ContainerPageRender.component(props)
+    }
   }
 }
 
@@ -42,16 +43,11 @@ object ContainerPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-    if (S.error.isDefined) {
-      Alert("Unable to connect to " + P.connection.url, S.error.get, Some(Links.settingsLink))
-    } else {
       <.div(
         S.info.map(vdomInfo),
         S.top.map(vdomTop), vdomLogs()
       )
-    }
-
-  }).componentWillMount(_.backend.willStart())
+    }).componentWillMount(_.backend.willStart())
     .build
 
   def vdomInfo(containerInfo: ContainerInfo) = {

@@ -3,9 +3,10 @@ package ui.pages
 import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.vdom.prefix_<^._
 
-object SettingsPage {
+object SettingsPage extends Page {
 
-  def apply() = {
+  val id = "Settings"
+  def component() = {
     SettingsPageRender.component()
   }
 }

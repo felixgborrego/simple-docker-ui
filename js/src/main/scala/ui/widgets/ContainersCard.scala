@@ -3,7 +3,8 @@ package ui.widgets
 import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.vdom.prefix_<^._
 import model.DockerMetadata
-import ui.Links
+import ui.Workbench
+import ui.pages.{ImagesPage, ContainersPage}
 import ui.widgets.ContainersCard.Props
 
 object ContainersCard {
@@ -34,19 +35,19 @@ object ContainersCardRender {
         <.div(^.className := "panel-body",
           <.div(^.className := "row",
             <.div(^.className := "col-sm-4",
-              Links.imagesLink(^.className := "bootcards-summary-item",
+              Workbench.link(ImagesPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-cloud-download"),
                 <.h4("Images", <.span(^.className := "label label-info")(docker.info.Images))
               )
             ),
             <.div(^.className := "col-sm-4",
-              Links.containersLink(^.className := "bootcards-summary-item",
+              Workbench.link(ContainersPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-transfer"),
                 <.h4("Running containers", <.span(^.className := "label label-info")(docker.containers.size))
               )
             ),
             <.div(^.className := "col-sm-4",
-              Links.containersLink(^.className := "bootcards-summary-item",
+              Workbench.link(ContainersPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-equalizer"),
                 <.h4("All containers", <.span(^.className := "label label-info")(docker.info.Containers))
               )

@@ -1,23 +1,23 @@
-lazy val root = project.in(file(".")).
-  enablePlugins(ScalaJSPlugin)
 
-name := "docker-ui-chrome-app"
+scalaVersion in ThisBuild := "2.11.6"
 
-scalaVersion := "2.11.6"
+lazy val js = project.in(file("js"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "js",
+    persistLauncher := true,
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "upickle" % "0.2.6",
+      "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
 
-persistLauncher in Compile := true
+      // react.js
+      "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.2"
+    ),
+    artifactPath in (Compile, fastOptJS) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-fastopt.js",
+    artifactPath in (Compile, packageScalaJSLauncher) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-launcher.js"
+  )
+
+//lazy val root = project.aggregate(ui, chromeapp)
 
 pollInterval := 100
-
-libraryDependencies ++= Seq(
-//  "net.lullabyte" %%% "scala-js-chrome" % "0.0.1-SNAPSHOT" withSources() withJavadoc(),
-  "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
-
-  // react.js
-  "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.2"
-)
-
-libraryDependencies += "com.lihaoyi" %%% "upickle" % "0.2.6"
-
-
 fork in run := true

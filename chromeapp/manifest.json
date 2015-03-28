@@ -1,0 +1,25 @@
+{
+  "name": "Docker ui for Chrome",
+  "description": "Simple Docker ui",
+  "version": "0.0.0.4",
+  "manifest_version": 2,
+  "minimum_chrome_version": "33.0.1715.0",
+  "icons": {
+    "128": "icon_128.png"
+  },
+  "app": {
+    "background": {
+      "scripts": ["launch.js"]
+    }
+  },
+    "permissions": [
+    "http://*/*", "https://*/*",
+      "https://www.google-analytics.com/",
+      "storage"
+  ],
+  "sockets": {
+    "tcp": {
+      "connect": "*:*"
+    }
+  }
+}

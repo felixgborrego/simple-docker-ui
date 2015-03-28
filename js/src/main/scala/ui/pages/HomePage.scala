@@ -3,16 +3,19 @@ package ui.pages
 import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{Connection, DockerMetadata}
-import ui.Links
-import ui.widgets.{Alert, ContainersCard, InfoCard}
+import model._
+import ui.Workbench
+import ui.widgets.{InfoCard, ContainersCard}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object HomePage {
 
-  case class State(info: Option[DockerMetadata] = None, error: Option[String] = None)
+case object HomePage extends Page {
+
+  val id = "HomePage"
+
+  case class State(info: Option[DockerMetadata] = None)
 
   case class Props(connection: Connection)
 
@@ -25,13 +28,13 @@ object HomePage {
       }.onFailure {
         case ex: Exception =>
           log.error("Unable to get Metadata", ex)
-          t.modState(s => State(None, Some(ex.getMessage)))
+          Workbench.error(ConnectionError(ex.getMessage))
       }
     }
   }
 
 
-  def apply() = {
+  def component() = {
     val props = Props(ConfigStore.connection)
     HomePageRender.component(props)
   }
@@ -45,17 +48,10 @@ object HomePageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-    if (S.error.isDefined) {
-      Alert("Unable to connect to " + P.connection.url, S.error.get, Some(Links.settingsLink))
-    } else {
-      S.info match {
-        case None =>
-          Alert("Unable to connect to ", P.connection.url, Some(Links.settingsLink))
-          //} else {
-          <.div("Connecting... to " + P.connection.url)
-        //}
-        case Some(info) => vdom(info)
-      }
+    S.info match {
+      case None =>
+        <.div("Connecting... to " + P.connection.url)
+      case Some(info) => vdom(info)
     }
   }).componentWillMount(_.backend.willStart())
     .build

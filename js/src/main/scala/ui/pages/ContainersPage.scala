@@ -3,33 +3,33 @@ package ui.pages
 import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{ContainersInfo, Connection, Container}
-import ui.Links
-import ui.widgets.Alert
+import model.{Connection, ConnectionError, Container, ContainersInfo}
+import ui.Workbench
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object ContainersPage {
+object ContainersPage extends Page {
 
-  case class State(info: ContainersInfo = ContainersInfo(), error: Option[String] = None)
+  val id = "Containers"
+
+  case class State(info: ContainersInfo = ContainersInfo())
 
   case class Props(connection: Connection)
 
   case class Backend(t: BackendScope[Props, State]) {
-
     def willStart(): Unit = {
       DockerClient(t.props.connection).containersInfo().map { info =>
         t.modState(s => State(info))
       }.onFailure {
         case ex: Exception =>
           log.error("Unable to get containers", ex)
-          t.modState(s => State(ContainersInfo(), Some(ex.getMessage)))
+          Workbench.error(ConnectionError(ex.getMessage))
       }
     }
   }
 
-  def apply() = {
+  def component() = {
     val props = Props(ConfigStore.connection)
     ContainersPageRender.component(props)
   }
@@ -43,26 +43,22 @@ object ContainersPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-    if (S.error.isDefined) {
-      Alert("Internal error " + P.connection.url, S.error.get, Some(Links.settingsLink))
-    } else {
-      vdom(S)
-    }
+    vdom(S)
   }).componentWillMount(_.backend.willStart())
     .build
 
   def vdom(state: State) = <.div(
-    table("Container Running", state.info.running),
-    table("History", state.info.history)
+    table(true,"Container Running", state.info.running),
+    table(false,"History", state.info.history)
   )
 
-  def table(title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-11",
+  def table(showLinks: Boolean, title: String, containers: Seq[Container]) = <.div(^.className := "container  col-sm-11",
     <.div(^.className := "panel panel-default  bootcards-summary",
       <.div(^.className := "panel-heading clearfix",
         <.h3(^.className := "panel-title pull-left")(title),
         <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#")
       ),
-      <.table(^.className := "table",
+      <.table(^.className := "table table-hover",
         <.thead(
           <.tr(
             <.th("Id"),
@@ -75,8 +71,8 @@ object ContainersPageRender {
         ),
         <.tbody(
           containers.map { c =>
-            <.tr(^.className := "info",
-              <.td(Links.containerLink(c.Id)(c.id)),
+            <.tr(
+              <.td(if(showLinks) Workbench.link(ContainerPage(c.Id))(c.id) else None),
               <.td(c.Image),
               <.td(c.Command),
               <.td(c.ports.map(<.div(_))),

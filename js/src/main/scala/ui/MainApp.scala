@@ -13,7 +13,7 @@ object MainApp extends JSApp {
   @JSExport
   override def main(): Unit = {
     log.info("Staring app")
-    val router = MainRouter.routerComponent()
-    React.render(router, dom.document.getElementById("container"))
+    val ui = Workbench()
+    React.render(ui, dom.document.getElementById("container"))
   }
 }
