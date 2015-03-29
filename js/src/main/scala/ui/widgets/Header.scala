@@ -3,14 +3,15 @@ package ui.widgets
 
 import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.vdom.prefix_<^._
-import ui.Workbench
+import ui.{WorkbenchRef, Workbench}
 import ui.pages._
 
 
 object Header {
 
-  case class Props(selected: Page) {
+  case class Props(workbenchRef: WorkbenchRef) {
 
+    def selected:Page = workbenchRef.selectedPage
     val Active = Some("active")
 
     def isHomeActive = if (selected.id == HomePage.id) Active else None
@@ -23,8 +24,8 @@ object Header {
 
   }
 
-  def apply(selected: Page) = {
-    val props = Props(selected)
+  def apply(workbenchRef: WorkbenchRef) = {
+    val props = Props(workbenchRef)
     HeaderRender.component(props)
   }
 }
@@ -49,10 +50,10 @@ object HeaderRender {
       ),
       <.div(^.id := "navbarCollapse", ^.className := "collapse navbar-collapse",
         <.ul(^.className := "nav navbar-nav",
-          <.li(^.className := props.isHomeActive, Workbench.link(HomePage)("Home")),
-          <.li(^.className := props.isContainerActive, Workbench.link(ContainersPage)("Containers")),
-          <.li(^.className := props.isImagesActive, Workbench.link(ImagesPage)("Images")),
-          <.li(^.className := props.isSettingsActive, Workbench.link(SettingsPage)("Settings"))
+          <.li(^.className := props.isHomeActive, props.workbenchRef.link(HomePage)("Home")),
+          <.li(^.className := props.isContainerActive, props.workbenchRef.link(ContainersPage)("Containers")),
+          <.li(^.className := props.isImagesActive, props.workbenchRef.link(ImagesPage)("Images")),
+          <.li(^.className := props.isSettingsActive, props.workbenchRef.link(SettingsPage)("Settings"))
         )
       )
     )

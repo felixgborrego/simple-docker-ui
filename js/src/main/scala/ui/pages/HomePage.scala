@@ -1,11 +1,10 @@
 package ui.pages
 
-import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
-import ui.Workbench
-import ui.widgets.{InfoCard, ContainersCard}
+import ui.WorkbenchRef
+import ui.widgets.{Alert, ContainersCard, InfoCard}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,29 +14,29 @@ case object HomePage extends Page {
 
   val id = "HomePage"
 
-  case class State(info: Option[DockerMetadata] = None)
+  case class State(info: Option[DockerMetadata] = None, error: Option[String] = None)
 
-  case class Props(connection: Connection)
+  case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
-
     def willStart(): Unit = {
-
-      DockerClient(t.props.connection).metadata().map { docker =>
-        t.modState(s => State(Some(docker)))
-      }.onFailure {
-        case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          Workbench.error(ConnectionError(ex.getMessage))
+      t.props.ref.client.map { client =>
+        client.metadata().map { docker =>
+          t.modState(s => State(Some(docker)))
+        }.onFailure {
+          case ex: Exception =>
+            log.error("Unable to get Metadata", ex)
+            t.modState(s => s.copy(error = Some("Unable to get data from " + t.props.ref.connection.fold("''")(_.url))))
+        }
       }
     }
   }
 
-
-  def component() = {
-    val props = Props(ConfigStore.connection)
+  def component(ref: WorkbenchRef) = {
+    val props = Props(ref)
     HomePageRender.component(props)
   }
+
 }
 
 object HomePageRender {
@@ -48,22 +47,24 @@ object HomePageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-    S.info match {
-      case None =>
-        <.div("Connecting... to " + P.connection.url)
-      case Some(info) => vdom(info)
-    }
+    vdom(S, P)
   }).componentWillMount(_.backend.willStart())
     .build
 
-  def vdom(docker: DockerMetadata) = {
+  def vdom(S: State, P: Props) = <.div(
+    S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
+    S.info.map(vdomInfo(_, P.ref))
+  )
+
+  def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef) = {
     val info = Map(
       "Connected to" -> docker.connection.url,
       "Version" -> (docker.version.Version + "(api: " + docker.version.ApiVersion + ")")
     )
     <.div(
-      ContainersCard(docker),
+      ContainersCard(docker, ref),
       InfoCard(info, InfoCard.SMALL, Some("System"))
     )
   }
 }
+

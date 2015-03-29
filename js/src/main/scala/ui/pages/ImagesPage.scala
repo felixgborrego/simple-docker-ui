@@ -1,10 +1,10 @@
 package ui.pages
 
-import api.{ConfigStore, DockerClient}
+import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{Connection, ConnectionError, Image}
-import ui.Workbench
-import ui.widgets.TableCard
+import model.Image
+import ui.WorkbenchRef
+import ui.widgets.{Alert, TableCard}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -13,24 +13,26 @@ object ImagesPage extends Page {
 
   val id = "Images"
 
-  case class State(localImages: Seq[Image] = Seq.empty)
+  case class State(localImages: Seq[Image] = Seq.empty, error: Option[String] = None)
 
-  case class Props(connection: Connection)
+  case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
     def willStart(): Unit = {
-      DockerClient(t.props.connection).images().map { images =>
-        t.modState(s => State(images))
-      }.onFailure {
-        case ex: Exception =>
-          log.error("Unable to get images", ex)
-          Workbench.error(ConnectionError(ex.getMessage))
+      t.props.ref.client.map { client =>
+        client.images().map { images =>
+          t.modState(s => State(images))
+        }.onFailure {
+          case ex: Exception =>
+            log.error("Unable to get Metadata", ex)
+            t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
+        }
       }
     }
   }
 
-  def component() = {
-    val props = Props(ConfigStore.connection)
+  def component(ref: WorkbenchRef) = {
+    val props = Props(ref)
     ImagesPageRender.component(props)
   }
 }
@@ -44,21 +46,22 @@ object ImagesPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-      vdom(S.localImages)
-    }).componentWillMount(_.backend.willStart())
+    vdom(S)
+  }).componentWillMount(_.backend.willStart())
     .build
 
 
-  def vdom(localImages: Seq[Image]) = {
-    val data = localImages.map { image =>
+  def vdom(S: State) = <.div(
+    S.error.map(Alert(_, None)),
+    TableCard(S.localImages.map { image =>
       Map(
         "Id" -> image.id,
         "Tags" -> image.RepoTags.mkString(", "),
         "Created" -> image.created,
         "Size" -> image.virtualSize
       )
-    }
-    TableCard(data, Some("Local images"))
-  }
+    }, Some("Local images"))
+  )
+
 
 }

@@ -16,15 +16,15 @@ object GlobalGoogleAnalytics extends js.GlobalScope {
 
   def analytics: Analytics = js.native
 
-  class Analytics extends js.Object {
+  trait Analytics extends js.Object {
     def getService(name: String): Service = js.native
   }
 
-  class Service extends js.Object {
+  trait Service extends js.Object {
     def getTracker(id: String): Tracker = js.native
   }
 
-  class Tracker extends js.Object {
+  trait Tracker extends js.Object {
     def sendAppView(name: String): Unit = js.native
 
     def sendEvent(events: Seq[String]): Unit = js.native

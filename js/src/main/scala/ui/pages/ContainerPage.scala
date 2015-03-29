@@ -1,11 +1,9 @@
 package ui.pages
 
-import api.{ConfigStore, DockerClient}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{ConnectionError, Connection, ContainerInfo, ContainerTop}
-import ui.Workbench
-
+import model.{ContainerInfo, ContainerTop}
+import ui.WorkbenchRef
 import ui.widgets.{Alert, InfoCard, TableCard}
 import util.logger._
 
@@ -14,33 +12,35 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object ContainerPage {
 
   case class State(info: Option[ContainerInfo] = None,
-                   top: Option[ContainerTop] = None)
+                   top: Option[ContainerTop] = None,
+                   error: Option[String] = None)
 
-  case class Props(connection: Connection, containerId: String)
+  case class Props(ref: WorkbenchRef, containerId: String)
 
   case class Backend(t: BackendScope[Props, State]) {
 
     def willStart(): Unit = {
-      val result = for {
-        info <- DockerClient(t.props.connection).containerInfo(t.props.containerId)
-        top <- DockerClient(t.props.connection).top(t.props.containerId)
-      } yield {
-        t.modState(s => State(Some(info), Some(top)))
-      }
+      t.props.ref.client.map { client =>
+        val result = for {
+          info <- client.containerInfo(t.props.containerId)
+          top <- client.top(t.props.containerId)
+        } yield t.modState(s => s.copy(Some(info), Some(top)))
 
-      result.onFailure{
-        case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          Workbench.error(ConnectionError(ex.getMessage))
+        result.onFailure {
+          case ex: Exception =>
+            log.error("Unable to get Metadata", ex)
+            t.modState(s => s.copy(None, None, Some("Unable to get data: " + ex.getMessage)))
+        }
       }
 
     }
   }
 
-  def apply(containerId: String) = new Page{
+  def apply(containerId: String, ref: WorkbenchRef) = new Page {
     val id = ContainersPage.id
-    def component() = {
-      val props = Props(ConfigStore.connection, containerId)
+
+    def component(ref: WorkbenchRef) = {
+      val props = Props(ref, containerId)
       ContainerPageRender.component(props)
     }
   }
@@ -54,12 +54,13 @@ object ContainerPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => {
-      <.div(
-        S.info.map(vdomInfo),
-        S.top.map(vdomTop),
-        vdomLogs()
-      )
-    }).componentWillMount(_.backend.willStart())
+    <.div(
+      S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
+      S.info.map(vdomInfo),
+      S.top.map(vdomTop),
+      vdomLogs()
+    )
+  }).componentWillMount(_.backend.willStart())
     .build
 
   def vdomInfo(containerInfo: ContainerInfo) = {

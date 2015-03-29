@@ -2,18 +2,6 @@ import util.momentJs.Moment
 
 package object model {
 
-  trait WorkbenchError {
-    def msg: String
-    def goToSettings: Boolean
-  }
-
-  case class ConnectionError(msg: String) extends WorkbenchError {
-    val goToSettings = true
-  }
-
-  case class GenericError(msg: String) extends WorkbenchError {
-    val goToSettings = false
-  }
 
   case class Connection(url: String)
 
