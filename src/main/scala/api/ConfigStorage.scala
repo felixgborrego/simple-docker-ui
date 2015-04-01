@@ -17,7 +17,7 @@ object ConfigStorage {
 
   def getUrlConnection(): Future[Option[Connection]] = get(PARAM_URL_CONNECTION)
     .map(url => Some(Connection(url)))
-    .recover(case _ => None)
+    .recover{case _ => None}
 
   def save(key: String, value: String): Future[Unit] = {
     log.info("Saving " + key + " = " + value)

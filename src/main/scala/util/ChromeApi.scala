@@ -11,6 +11,8 @@ package object Api extends js.GlobalScope {
 
 trait Chrome extends js.Object {
   def storage: ChromeStorage = js.native
+
+  def runtime: Runtime = js.native
 }
 
 trait ChromeStorage extends js.Object {
@@ -18,9 +20,22 @@ trait ChromeStorage extends js.Object {
 }
 
 trait Storage extends js.Object {
-  def set(map: js.Dynamic, callback: js.Function0[Any]):Unit = js.native
+  def set(map: js.Dynamic, callback: js.Function0[Any]): Unit = js.native
 
-  def get(key: String, callback: js.Function1[js.Dynamic, Any]):Unit = js.native
+  def get(key: String, callback: js.Function1[js.Dynamic, Any]): Unit = js.native
+}
+
+trait Runtime extends js.Object {
+  def getPlatformInfo(callback: js.Function1[PlatformInfo, Any]): Unit = js.native
+}
+
+
+trait PlatformInfo extends js.Object {
+  def os: String = js.native
+
+  def arch: String = js.native
+
+  def nacl_arch: String = js.native
 }
 
 
