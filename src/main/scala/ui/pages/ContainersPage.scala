@@ -52,7 +52,7 @@ object ContainersPageRender {
   def vdom(S: State, P: Props) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
     table(true, "Container Running", S.info.running, P),
-    table(false, "History", S.info.history, P)
+    table(true, "History", S.info.history, P)
   )
 
   def table(showLinks: Boolean, title: String, containers: Seq[Container], props: Props) =

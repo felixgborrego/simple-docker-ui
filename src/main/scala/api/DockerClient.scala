@@ -10,7 +10,7 @@ import util.logger._
 
 case class DockerClient(connection: Connection) {
 
-  val HttpTimeOut = 3 * 1000 // 3 seconds
+  val HttpTimeOut = 10 * 1000 // 3 seconds
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#ping-the-docker-server
   def ping(): Future[Unit] = {
@@ -43,7 +43,19 @@ case class DockerClient(connection: Connection) {
     }
   }
 
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#stop-a-container
+  def stopContainer(containerId: String): Future[ContainerInfo] = {
+    val p = Promise[ContainerInfo]
+
+    val TimeoutSeg = 3
+    val url = connection.url + "/containers/" + containerId + "/stop?t=" + TimeoutSeg
+    log.info("[dockerClient.stopContainer] url: " + url)
+    Ajax.post(url = url, timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.stopContainer] return: " + xhr.responseText)
+      p.completeWith(containerInfo(containerId))
     }
+
+    p.future
   }
 
   def top(containerId: String): Future[ContainerTop] = {
