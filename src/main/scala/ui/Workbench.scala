@@ -30,18 +30,33 @@ object Workbench {
       Workbench.State(Some(page), s.connection)
     }
 
-    def componentWillMount(): Unit =
-      ConfigStorage.getUrlConnection().map { connection =>
-        t.modState(s =>s.copy(connection=connection))
-        connection.fold(show(SettingsPage))(_ => show(HomePage))
+    def componentWillMount() = connectSaveConnection()
+
+
+    def connectSaveConnection():Unit = ConfigStorage.getUrlConnection().map { connection =>
+      t.modState(_.copy(connection = connection))
+      connection match {
+        case Some(url) => show(HomePage)
+        case None => tryDefaultConnection()
       }
+    }
+
+    def tryDefaultConnection() = {
+      println("test1")
+      val test = for {
+        client <- ConfigStorage.getDefaultUrl().map(Connection).map(DockerClient)
+        _ <- client.ping().map(_ =>   println("test2"))
+        _ <- ConfigStorage.saveConnection(client.connection.url).map(_ =>   println("test3"))
+      } yield connectSaveConnection()
+
+      test.onFailure { case _ => show(SettingsPage) }
+    }
 
     def reconnect(): Unit =
       ConfigStorage.getUrlConnection().map { connection =>
         log.info("workbench reconnected to " + connection)
-        t.modState(s =>s.copy(connection=connection))
+        t.modState(s => s.copy(connection = connection))
       }
-
 
 
   }
