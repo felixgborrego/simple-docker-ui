@@ -1,8 +1,9 @@
 {
-  "name": "Docker ui",
-  "description": "Simple Docker ui",
-  "version": "0.0.0.4",
-  "manifest_version": 2,
+  "name": "Simple Docker UI",
+  "short_name": "Docker UI",
+  "description": "Simple Docker UI for Chrome is an unofficial developer tool for monitoring and managing your local Docker containers.",
+  "version": "0.0.0.5",
+  "manifest_version": 5,
   "minimum_chrome_version": "33.0.1715.0",
   "icons": {
     "128": "icon_128.png"

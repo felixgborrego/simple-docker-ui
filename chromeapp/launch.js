@@ -8,8 +8,8 @@ chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create('index.html', {
   	id: "mainwin",
     innerBounds: {
-      width: 880,
-      height: 480
+      width: 1100,
+      height: 770
     }
   });
 });
