@@ -2,11 +2,12 @@ package api
 
 import model._
 import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.raw._
 import upickle._
+import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Promise, Future}
-import util.logger._
+import scala.concurrent.Future
 
 case class DockerClient(connection: Connection) {
 
@@ -45,17 +46,22 @@ case class DockerClient(connection: Connection) {
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#stop-a-container
   def stopContainer(containerId: String): Future[ContainerInfo] = {
-    val p = Promise[ContainerInfo]
-
     val TimeoutSeg = 3
     val url = connection.url + "/containers/" + containerId + "/stop?t=" + TimeoutSeg
     log.info("[dockerClient.stopContainer] url: " + url)
     Ajax.post(url = url, timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.stopContainer] return: " + xhr.responseText)
-      p.completeWith(containerInfo(containerId))
-    }
+      //  p.completeWith(containerInfo(containerId))
+    }.flatMap(_ => containerInfo(containerId))
+  }
 
-    p.future
+
+  def startContainer(containerId: String): Future[ContainerInfo] = {
+    val url = connection.url + "/containers/" + containerId + "/start"
+    log.info("[dockerClient.startContainer] url: " + url)
+    Ajax.post(url = url, timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.startContainer] return: " + xhr.responseText)
+    }.flatMap(_ => containerInfo(containerId))
   }
 
   def top(containerId: String): Future[ContainerTop] = {
@@ -99,4 +105,51 @@ case class DockerClient(connection: Connection) {
       read[Version](xhr.responseText)
     }
   }
+
+  def attachToContainer(containerId: String): WebSocket = {
+    import util.stringUtils._
+    val schema = if (connection.url.startsWith("http://")) "ws://" else "wss://"
+
+    //val url = "ws://"+ substringAfter(connection.url + "/containers/" + containerId + "/attach/ws?logs=0&stream=1&stdin=1&stdout=1&stderr=1","://")
+    val url = schema + substringAfter(connection.url + "/containers/" + containerId + "/attach/ws?logs=1&stderr=1&stdout=1&stream=1&stdin=1", "://")
+    // val url = "ws://echo.websocket.org/"
+    log.info("[dockerClient.attach] url: " + url)
+    var ws = new WebSocket(url)
+
+    ws
+  }
+
+  /*
+  def attachToContainer(containerId: String): WebSocket = {
+    import util.stringUtils._
+
+    def execCreate(containerId: String): Future[ExecCreated] = {
+      val url = connection.url + "/containers/" + containerId + "/exec"
+      val data = write(ExecStart(false, true))
+
+      Ajax.post(url = url, data = data, timeout = HttpTimeOut).map { xhr =>
+        log.info("[dockerClient.execCreate] return: " + xhr.responseText)
+        read[ExecCreated](xhr.responseText)
+      }
+    }
+
+
+
+    def execStart(execCreated: ExecCreated) = {
+
+      val schema = if (connection.url.startsWith("http://")) "ws://" else "wss://"
+
+      //val url = "ws://"+ substringAfter(connection.url + "/containers/" + containerId + "/attach/ws?logs=0&stream=1&stdin=1&stdout=1&stderr=1","://")
+      val url = schema + substringAfter(connection.url + "/containers/" + containerId + "/attach/ws?logs=0&stream=1&stdout=1", "://")
+      // val url = "ws://echo.websocket.org/"
+      log.info("[dockerClient.attach] url: " + url)
+      var ws = new WebSocket(url)
+    }
+    //ws.onmessage = (x: MessageEvent) => Console.println(x.data.toString)
+    //ws.onopen = (x: Event) => {}
+    //ws.onerror = (x: ErrorEvent) => Console.println("some error has   occured " + x.message)
+    //ws.onclose = (x: CloseEvent) => {}
+    //ws
+  }
+*/
 }

@@ -1,20 +1,23 @@
 package ui.pages
 
 import japgolly.scalajs.react.vdom.prefix_<^._
-import japgolly.scalajs.react.{BackendScope, ReactComponentB}
+import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model.{ContainerInfo, ContainerTop}
+import org.scalajs.dom.raw.WebSocket
 import ui.WorkbenchRef
-import ui.widgets.{Button, Alert, InfoCard, TableCard}
+import ui.widgets._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object ContainerPage {
 
   case class State(info: Option[ContainerInfo] = None,
                    top: Option[ContainerTop] = None,
                    error: Option[String] = None,
-                   actionStopping: Boolean = false)
+                   actionStopping: Boolean = false,
+                   tabSelected: ContainerPageTab = TabNone)
 
   case class Props(ref: WorkbenchRef, containerId: String)
 
@@ -24,27 +27,40 @@ object ContainerPage {
       t.props.ref.client.map { client =>
         val result = for {
           info <- client.containerInfo(t.props.containerId)
-          top <- client.top(t.props.containerId)
-        } yield t.modState(s => s.copy(Some(info), Some(top)))
+          top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty[ContainerTop])
+        } yield t.modState(s => s.copy(Some(info), top))
 
         result.onFailure {
           case ex: Exception =>
             log.error("Unable to get Metadata", ex)
             t.modState(s => s.copy(None, None, Some("Unable to get data: " + ex.getMessage)))
         }
+
+        result.onSuccess {
+          case _ => t.modState(s => s.copy(tabSelected = TabTerminal))
+        }
       }
     }
 
-    def stop() = {
-      val result = t.props.ref.client.get.stopContainer(t.props.containerId).map { info =>
-        t.modState(s => s.copy(info = Some(info), top = None))
+    def stop() =
+      t.props.ref.client.get.stopContainer(t.props.containerId).map { info =>
+        willStart()
       }
-      result.onFailure {
-        case ex: Exception =>
-          log.error("Unable to stop!", ex)
+
+
+    def start() =
+      t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
+        t.modState(s => s.copy(tabSelected = TabNone))
+        willStart()
       }
-      result
+
+
+    def showTab(tab: ContainerPageTab) = {
+      t.modState(s => s.copy(tabSelected = tab))
     }
+
+    def attach(): WebSocket =
+      t.props.ref.client.get.attachToContainer(t.props.containerId)
 
   }
 
@@ -69,19 +85,18 @@ object ContainerPageRender {
     .render((P, S, B) => {
     <.div(
       S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-      S.info.map(vdomInfo(_, S, B)),
-      S.top.map(vdomTop),
-      vdomLogs()
+      S.info.map(vdomInfo(_, S, P, B)),
+      vDomTabs(S, B)
     )
   }).componentWillMount(_.backend.willStart())
     .build
 
-  def vdomInfo(containerInfo: ContainerInfo, S: State, B: Backend) = {
+  def vdomInfo(containerInfo: ContainerInfo, S: State, P: Props, B: Backend) = {
     val generalInfo = Map(
       "Id / Name" -> containerInfo.id,
       "Image" -> containerInfo.image,
       "Created" -> containerInfo.created,
-      "Status" -> "---"
+      "Status" -> (if (containerInfo.State.Running) "Running" else "Stopped")
     )
     val executionInfo = Map(
       "Command" -> containerInfo.Config.cmd.mkString(" "),
@@ -89,46 +104,87 @@ object ContainerPageRender {
       "Environment" -> containerInfo.Config.env.mkString(" "),
       "WorkingDir" -> containerInfo.Config.WorkingDir
     )
+    val ports = containerInfo.NetworkSettings.ports.map {
+      case (external, internal) => external + " -> " + internal
+    }.mkString(", ")
+
     val networkInfo = Map(
-      "Public Ip" -> "---",
-      "Port Mapping" -> "---",
+      "Ip" -> containerInfo.NetworkSettings.IPAddress,
+      "Port Mapping" -> ports,
       "Volumes" -> "---"
     )
+
+
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None,
         vdomCommands(S, B)
       ),
       InfoCard(executionInfo),
-      InfoCard(networkInfo)
+      InfoCard(networkInfo, InfoCard.SMALL, None, vdomServiceUrl(containerInfo, P))
     )
+
   }
 
-  def vdomCommands(state: State, B: Backend) = {
-    val (stopIcon, stopText) = if (state.actionStopping)
-      ("glyphicon glyphicon-refresh glyphicon-spin", "")
-    else ("glyphicon glyphicon glyphicon-stop", "Stop")
+  def vdomServiceUrl(containerInfo: ContainerInfo, P: Props) = {
+    val ip = P.ref.connection.map(_.ip).getOrElse("")
+    containerInfo.NetworkSettings.ports.map {
+      case (external, internal) => ip + ":" + external
+    }
+  }.map(url => <.div(^.className := "panel-footer", <.a(^.href := "http://" + url, ^.target := "_blank")(url))).headOption
 
+  def vdomCommands(state: State, B: Backend) = {
     Some(<.div(^.className := "panel-footer",
       <.div(^.className := "btn-group btn-group-justified",
         <.div(^.className := "btn-group",
-          Button("Stop", "glyphicon-stop")(B.stop),
-          Button("Stop", "glyphicon-log-in")(B.stop)
+          state.info.map {
+            info =>
+              if (info.State.Running)
+                Button("Stop", "glyphicon-stop")(B.stop)
+              else
+                Button("Star", "glyphicon-play")(B.start)
+          }
         )
       )
     ))
   }
 
+  def vDomTabs(S: State, B: Backend) =
+    <.div(^.className := "container  col-sm-12",
+      <.div(^.className := "panel panel-default",
+        <.ul(^.className := "nav nav-tabs",
+          <.li(^.role := "presentation", (S.tabSelected == TabTerminal) ?= (^.className := "active"),
+            <.a(^.onClick --> B.showTab(TabTerminal), "Terminal")
+          ),
+          S.top.map(s =>
+            <.li(^.role := "presentation", (S.tabSelected == TabTop) ?= (^.className := "active"),
+              <.a(^.onClick --> B.showTab(TabTop), "Top")
+            ))
+        ),
+        (S.tabSelected == TabTerminal) ?= TerminalCard(S.info.map(_.Config.AttachStdin).getOrElse(true)) { () =>
+          B.attach()
+        },
+        (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get
 
-  def vdomTop(top: ContainerTop) = {
+      )
+    )
+
+
+  //  S.top.map(vdomTop),
+  //  S.terminalConnection.map(TerminalCard(_))
+
+
+  def vdomTop(top: ContainerTop): ReactElement = {
     val keys = top.Titles
     val values = top.Processes.map(data => keys.zip(data).toMap)
-    println(values)
-    <.div(
-      TableCard(values, Some("Processes running inside the container"))
-    )
+    TableCard(values)
   }
 
-  def vdomLogs() = {
-    InfoCard(Map.empty, InfoCard.LARGE, Some("Logs"))
-  }
 }
+
+sealed trait ContainerPageTab
+
+case object TabNone extends ContainerPageTab
+
+case object TabTerminal extends ContainerPageTab
+
+case object TabTop extends ContainerPageTab

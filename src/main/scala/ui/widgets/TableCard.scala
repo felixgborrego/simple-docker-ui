@@ -5,10 +5,10 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 
 object TableCard {
 
-  case class Props(data: Seq[Map[String, String]], title: Option[String])
+  case class Props(data: Seq[Map[String, String]])
 
-  def apply(data: Seq[Map[String, String]], title: Option[String] = None) = {
-    val props = new Props(data, title)
+  def apply(data: Seq[Map[String, String]]) = {
+    val props = new Props(data)
     TableCardRender.component(props)
   }
 }
@@ -23,34 +23,26 @@ object TableCardRender {
     ).build
 
   def vdom(props: Props) = {
-    val keys = props.data.headOption.map(_.keys.toSeq)getOrElse(Seq.empty)
-
-    <.div(^.className := "container  col-sm-12",
-      <.div(^.className := "panel panel-default",
-        props.title.map { title =>
-          <.div(^.className := "panel-heading clearfix",
-            <.h3(^.className := "panel-title pull-left")(title)
+    val keys = props.data.headOption.map(_.keys.toSeq) getOrElse (Seq.empty)
+    <.div(^.className := "table-responsive",
+      <.table(^.className := "table table-hover",
+        <.thead(
+          <.tr(
+            keys.map(<.th(_))
           )
-        },
-        <.div(^.className := "table-responsive",
-          <.table(^.className := "table table-hover",
-            <.thead(
-              <.tr(
-                keys.map(<.th(_))
-              )
-            ),
-            <.tbody(
-              props.data.map { row =>
-                <.tr(
-                  keys.map { key =>
-                    <.td(row(key))
-                  }
-                )
+        ),
+        <.tbody(
+          props.data.map { row =>
+            <.tr(
+              keys.map { key =>
+                <.td(row(key))
               }
             )
-          )
+          }
         )
       )
     )
+
+
   }
 }

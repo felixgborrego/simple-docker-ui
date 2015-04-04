@@ -53,14 +53,21 @@ object ImagesPageRender {
 
   def vdom(S: State) = <.div(
     S.error.map(Alert(_, None)),
-    TableCard(S.localImages.map { image =>
-      Map(
-        "Id" -> image.id,
-        "Tags" -> image.RepoTags.mkString(", "),
-        "Created" -> image.created,
-        "Size" -> image.virtualSize
+    <.div(^.className := "container  col-sm-12",
+      <.div(^.className := "panel panel-default",
+        <.div(^.className := "panel-heading clearfix",
+          <.h3(^.className := "panel-title pull-left")("Local images")
+        ),
+        TableCard(S.localImages.map { image =>
+          Map(
+            "Id" -> image.id,
+            "Tags" -> image.RepoTags.mkString(", "),
+            "Created" -> image.created,
+            "Size" -> image.virtualSize
+          )
+        })
       )
-    }, Some("Local images"))
+    )
   )
 
 

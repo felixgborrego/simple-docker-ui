@@ -3,7 +3,12 @@ import util.momentJs.Moment
 package object model {
 
 
-  case class Connection(url: String)
+  case class Connection(url: String) {
+
+    import util.stringUtils._
+
+    def ip = substringBefore(substringAfter(url, "://"), ":")
+  }
 
   case class DockerMetadata(connection: Connection, info: Info, version: Version, containers: Seq[Container])
 
@@ -41,8 +46,8 @@ package object model {
     }
 
     def ports = Ports.map { p =>
-      val external = if (p.PublicPort == 0) "" else p.IP + ":" + p.PublicPort + "->"
-      val internal = if (p.PrivatePort == 0) "" else p.PrivatePort + "/" + p.Type
+      val external = if (p.PublicPort == 0) "" else p.PublicPort + "->"
+      val internal = if (p.PrivatePort == 0) "" else p.PrivatePort
       external + internal
     }.reverse
   }
@@ -52,7 +57,7 @@ package object model {
   }
 
   case class ContainerInfo(Args: Seq[String], Id: String, Image: String, Name: String, Path: String, Created: String,
-                           Config: ContainerConfig) {
+                           Config: ContainerConfig, State: ContainerState, NetworkSettings: NetworkSettings) {
     def id = subId(Id)
 
     def image = subId(Image)
@@ -63,13 +68,15 @@ package object model {
 
   }
 
+  case class ContainerState(Running: Boolean)
+
   case class ContainerConfig(AttachStderr: Boolean, AttachStdin: Boolean, AttachStdout: Boolean,
                              Cmd: Seq[String] = Seq.empty, Entrypoint: Seq[String] = Seq.empty, Env: Seq[String] = Seq.empty,
                              Hostname: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String) {
 
     // Workaround, Docker may return null
-    val cmd = if (Cmd == null) Seq.empty else Cmd
-    val env = if (Env == null) Seq.empty else Env
+    val cmd = Option(Cmd).getOrElse(Seq.empty)
+    val env = Option(Env).getOrElse(Seq.empty)
   }
 
   case class Port(Type: String, IP: String = "", PrivatePort: Int = 0, PublicPort: Int = 0)
@@ -88,10 +95,28 @@ package object model {
     def virtualSize = bytesToSize(VirtualSize)
   }
 
-  def bytesToSize(bytes:Int) = {
-    val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB");
+  case class NetworkSettings(IPAddress: String, Ports: Map[String, Seq[NetowrkSettingsPort]] = Map.empty) {
+        def ports: Seq[(String, String)] = Option(Ports).map { p =>
+          p.map { case (port, settingsPorts) =>
+            Option(settingsPorts).getOrElse(Seq.empty).map(_.HostPort).map((_, port))
+          }.flatten.toSeq
+        }.getOrElse(Seq.empty)
+    //def ports: Seq[(String, String)] = Seq.empty
+  }
+
+  case class NetowrkSettingsPort(HostIp: String, HostPort: String)
+
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#exec-create
+  case class ExecCreated(Id: String)
+
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#exec-start
+  case class ExecStart(Detach: Boolean, Tty: Boolean)
+
+
+  def bytesToSize(bytes: Int) = {
+    val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB")
     if (bytes == 0) {
-     "0 Byte"
+      "0 Byte"
     } else {
       val i = Math.floor(Math.log(bytes) / Math.log(1024)).toInt
       Math.round(bytes / Math.pow(1024, i)) + " " + Sizes(i)
@@ -100,4 +125,6 @@ package object model {
   }
 
   def subId(id: String) = id.take(12)
+
+
 }
