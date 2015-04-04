@@ -7,7 +7,7 @@ lazy val root = project.in(file("."))
     name := "dockerui",
     persistLauncher := true,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % "0.2.6",
+      "com.lihaoyi" %%% "upickle" % "0.2.8",
       "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.2"
     ),
