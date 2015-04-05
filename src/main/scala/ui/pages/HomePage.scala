@@ -16,7 +16,9 @@ case object HomePage extends Page {
 
   case class State(info: Option[DockerMetadata] = None, error: Option[String] = None)
 
-  case class Props(ref: WorkbenchRef)
+  case class Props(ref: WorkbenchRef) {
+    def url = ref.connection.map(_.url).getOrElse("''")
+  }
 
   case class Backend(t: BackendScope[Props, State]) {
     def willStart(): Unit = t.props.ref.client.map { client =>
@@ -24,8 +26,8 @@ case object HomePage extends Page {
         t.modState(s => State(Some(docker)))
       }.onFailure {
         case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some("Unable to get data from " + t.props.ref.connection.getOrElse("''"))))
+          log.error("HomePage","Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some(s"Unable to connect to ${t.props.url}")))
       }
     }
 

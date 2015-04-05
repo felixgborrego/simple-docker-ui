@@ -19,7 +19,8 @@ object TerminalCard {
 
     def didMount(): Unit = {
       log.info("Terminal: willStart")
-      val terminal = new Terminal(util.termJs.Default)
+      val config = if(t.props.stdinAttached) util.termJs.DefaultWithOutStdin else util.termJs.DefaultWithOutStdin
+      val terminal = new Terminal(config)
       val element = dom.document.getElementById("terminal")
       initTerminal(terminal, element)
 

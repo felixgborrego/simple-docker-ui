@@ -26,6 +26,7 @@ case class DockerClient(connection: Connection) {
 
 
   def metadata(): Future[DockerMetadata] = for {
+    test <- ping()
     info <- info()
     version <- version()
     containers <- containers(all = false)
@@ -56,6 +57,11 @@ case class DockerClient(connection: Connection) {
     Ajax.post(s"$url/containers/$containerId/start", timeout = HttpTimeOut).flatMap(_ => containerInfo(containerId))
   }
 
+  def removeContainer(containerId: String): Future[Unit] =
+    Ajax.delete(s"$url/containers/$containerId", timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.removeContainer] return: " + xhr.readyState)
+    }
+
   def top(containerId: String): Future[ContainerTop] =
     Ajax.get(s"$url/containers/$containerId/top", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.top] return: " + xhr.responseText)
@@ -67,6 +73,18 @@ case class DockerClient(connection: Connection) {
     Ajax.get(s"$url/images/json", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.images] return: " + xhr.responseText)
       read[Seq[Image]](xhr.responseText)
+    }
+
+  def imageInfo(imageId: String): Future[ImageInfo] =
+    Ajax.get(s"$url/images/$imageId/json", timeout = HttpTimeOut).map { xhr =>
+      log.debug("[dockerClient.imageInfo] return: " + xhr.responseText)
+      read[ImageInfo](xhr.responseText)
+    }
+
+  def imageHistory(imageId: String): Future[Seq[ImageHistory]] =
+    Ajax.get(s"$url/images/$imageId/history", timeout = HttpTimeOut).map { xhr =>
+      log.debug("[dockerClient.imageHistory] return: " + xhr.responseText)
+      read[Seq[ImageHistory]](xhr.responseText)
     }
 
 

@@ -8,10 +8,10 @@ object InfoCard {
   val SMALL = 4
   val LARGE = 12
 
-  case class Props(info: Map[String, String], size: Int, title: Option[String], footer: Option[ReactTag])
+  case class Props(info: Map[String, String], size: Int, title: Option[String], others: Seq[ReactTag], footer: Option[ReactTag])
 
-  def apply(info: Map[String, String], size: Int = SMALL, title: Option[String] = None, footer: Option[ReactTag] = None) = {
-    val props = Props(info, size, title, footer)
+  def apply(info: Map[String, String], size: Int = SMALL, title: Option[String] = None, others: Seq[ReactTag] = Seq.empty, footer: Option[ReactTag] = None) = {
+    val props = Props(info, size, title, others, footer)
     InfoCardRender.component(props)
   }
 }
@@ -40,6 +40,7 @@ object InfoCardRender {
             )
           )
         },
+        props.others,
         props.footer
       )
     )

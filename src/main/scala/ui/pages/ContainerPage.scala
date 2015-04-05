@@ -31,8 +31,8 @@ object ContainerPage {
 
       result.onFailure {
         case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          t.modState(s => s.copy(None, None, Some("Unable to get data: " + ex.getMessage)))
+          log.error("ContainerPage", s"Unable to get containerInfo for ${t.props.containerId}", ex)
+          t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
 
       result.onSuccess {
@@ -51,6 +51,11 @@ object ContainerPage {
         willStart()
       }
 
+    def remove() =
+      t.props.ref.client.get.removeContainer(t.props.containerId).map { info =>
+        t.props.ref.show(ContainersPage)
+      }
+
     def showTab(tab: ContainerPageTab) = {
       t.modState(s => s.copy(tabSelected = tab))
     }
@@ -58,6 +63,13 @@ object ContainerPage {
     def attach(): WebSocket =
       t.props.ref.client.get.attachToContainer(t.props.containerId)
 
+    def showImage(): Unit = t.props.ref.client.map { client =>
+      client.images().map { images =>
+        images.filter(_.Id == t.state.info.get.Image).map { image =>
+          t.props.ref.show(ImagePage(image, t.props.ref))
+        }
+      }
+    }
   }
 
 
@@ -94,7 +106,6 @@ object ContainerPageRender {
   def vdomInfo(containerInfo: ContainerInfo, S: State, P: Props, B: Backend) = {
     val generalInfo = Map(
       "Id / Name" -> containerInfo.id,
-      "Image" -> containerInfo.image,
       "Created" -> containerInfo.created,
       "Status" -> (if (containerInfo.State.Running) "Running" else "Stopped")
     )
@@ -116,12 +127,28 @@ object ContainerPageRender {
 
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None,
+        imageInfo(containerInfo, B),
         vdomCommands(S, B)
       ),
       InfoCard(executionInfo),
-      InfoCard(networkInfo, InfoCard.SMALL, None, vdomServiceUrl(containerInfo, P))
+      InfoCard(networkInfo, InfoCard.SMALL, None, Seq.empty, vdomServiceUrl(containerInfo, P))
     )
   }
+
+  def imageInfo(containerInfo: ContainerInfo, B: Backend) = Seq(
+    <.div(^.className := "list-group",
+      <.div(^.className := "list-group-item",
+        <.i(^.className := "list-group-item-text")("Image"),
+        <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word",
+          <.a(^.onClick --> B.showImage)(containerInfo.image),
+          " (",
+          <.strong(^.className := "list-group-item-heading", ^.wordWrap := "break-word", containerInfo.Config.Image),
+          ") "
+        )
+      )
+    )
+  )
+
 
   def vdomServiceUrl(containerInfo: ContainerInfo, P: Props) = {
     val ip = P.ref.connection.map(_.ip).getOrElse("")
@@ -140,29 +167,30 @@ object ContainerPageRender {
                 Button("Stop", "glyphicon-stop")(B.stop)
               else
                 Button("Star", "glyphicon-play")(B.start)
-          }
+          }),
+        <.div(^.className := "btn-group",
+          Button("Star", "glyphicon-trash")(B.remove)
         )
       )
     ))
 
 
   def vDomTabs(S: State, B: Backend) = {
-    val stdin = S.info.map(_.Config.AttachStdin).getOrElse(true)
+    val stdin = S.info.map(info => info.Config.AttachStdin && info.State.Running).getOrElse(false)
 
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.ul(^.className := "nav nav-tabs",
           <.li(^.role := "presentation", (S.tabSelected == TabTerminal) ?= (^.className := "active"),
-            <.a(^.onClick --> B.showTab(TabTerminal), "Terminal")
+            <.a(^.onClick --> B.showTab(TabTerminal), ^.className := "glyphicon glyphicon-console", " Terminal")
           ),
           S.top.map(s =>
             <.li(^.role := "presentation", (S.tabSelected == TabTop) ?= (^.className := "active"),
-              <.a(^.onClick --> B.showTab(TabTop), "Top")
+              <.a(^.onClick --> B.showTab(TabTop), ^.className := "glyphicon glyphicon-transfer", " Top")
             ))
         ),
         (S.tabSelected == TabTerminal) ?= TerminalCard(stdin)(B.attach),
         (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get
-
       )
     )
   }

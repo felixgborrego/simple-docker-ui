@@ -46,7 +46,7 @@ private object ButtonRender {
 
   def vdom(B: Backend) =
     <.button(^.className := "btn btn-default", ^.onClick --> B.click(),
-      <.i(^.className := B.className, B.text)
+      <.i(^.className := B.className, " " + B.text)
     )
 
 

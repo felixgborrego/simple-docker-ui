@@ -24,9 +24,8 @@ private object AlertRender {
   def vdom(props: Props) =
     <.div(^.className := "panel",
       <.div(^.className := "alert alert-warning",
-        <.strong("Error!  "),
-        props.msg,
-        props.links.map(_(" Go to Settings")(^.className := "alert-link"))
+        props.msg, <.br(),
+        props.links.map(_("Go to Settings")(^.className := "alert-link"))
       )
     )
 

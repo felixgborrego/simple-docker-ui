@@ -25,7 +25,7 @@ object TableCardRender {
 
   def vdom(props: Props) =
     <.div(^.className := "table-responsive",
-      <.table(^.className := "table table-hover",
+      <.table(^.className := "table table-hover table-striped table-condensed",
         <.thead(
           <.tr(props.keys.map(<.th(_)))
         ),

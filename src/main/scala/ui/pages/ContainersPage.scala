@@ -23,8 +23,8 @@ object ContainersPage extends Page {
         t.modState(s => State(info))
       }.onFailure {
         case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
+          log.error("ContainersPage", "Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
     }
 

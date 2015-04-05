@@ -22,7 +22,9 @@ object termJs {
   }
 
 
-  def Default = js.Dynamic.literal(cols = 150, rows = 20, screenKeys = true, useStyle = true)
+  def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = true, useStyle = true)
+
+  def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = false, useStyle = true)
 
   def initTerminal(terminal: Terminal, element: Element) = {
     terminal.open(element)

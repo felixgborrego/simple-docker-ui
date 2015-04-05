@@ -91,6 +91,8 @@ case class WorkbenchRef(state: State, backend: Backend) {
 
   def link(page: Page) = <.a(^.onClick --> backend.show(page), ^.href := "#")
 
+  def show(page: Page) = backend.show(page)
+
   def client: Option[DockerClient] = {
     state.connection.map(DockerClient)
   }

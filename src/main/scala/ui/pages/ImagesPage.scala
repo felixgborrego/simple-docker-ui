@@ -4,7 +4,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.Image
 import ui.WorkbenchRef
-import ui.widgets.{Alert, TableCard}
+import ui.widgets.Alert
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,8 +23,8 @@ object ImagesPage extends Page {
         t.modState(s => State(images))
       }.onFailure {
         case ex: Exception =>
-          log.error("Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
+          log.error("ImagesPage", "Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
     }
   }
@@ -43,28 +43,43 @@ object ImagesPageRender {
   val component = ReactComponentB[Props]("ImagesPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => vdom(S))
+    .render((P, S, B) => vdom(S, P))
     .componentWillMount(_.backend.willStart())
     .build
 
 
-  def vdom(S: State) = <.div(
+  def vdom(S: State, P: Props) = <.div(
     S.error.map(Alert(_, None)),
+    table("Local images", S.localImages, P)
+  )
+
+  def table(title: String, images: Seq[Image], P: Props) =
     <.div(^.className := "container  col-sm-12",
-      <.div(^.className := "panel panel-default",
+      <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")("Local images")
+          <.h3(^.className := "panel-title pull-left")(title)
         ),
-        TableCard(S.localImages.map { image =>
-          Map(
-            "Id" -> image.id,
-            "Tags" -> image.RepoTags.mkString(", "),
-            "Created" -> image.created,
-            "Size" -> image.virtualSize
+        <.table(^.className := "table table-hover",
+          <.thead(
+            <.tr(
+              <.th("Id"),
+              <.th("Tags"),
+              <.th("Created"),
+              <.th("Size")
+            )
+          ),
+          <.tbody(
+            images.map { img =>
+              <.tr(
+                <.td(P.ref.link(ImagePage(img, P.ref))(img.id)),
+                <.td(img.RepoTags.mkString(", ")),
+                <.td(img.created),
+                <.td(img.virtualSize)
+              )
+            }
           )
-        })
+        )
       )
     )
-  )
 
 }

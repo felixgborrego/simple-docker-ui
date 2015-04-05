@@ -56,6 +56,7 @@ package object model {
     def history = all.diff(running)
   }
 
+
   case class ContainerInfo(Args: Seq[String], Id: String, Image: String, Name: String, Path: String, Created: String,
                            Config: ContainerConfig, State: ContainerState, NetworkSettings: NetworkSettings) {
     def id = subId(Id)
@@ -72,7 +73,7 @@ package object model {
 
   case class ContainerConfig(AttachStderr: Boolean, AttachStdin: Boolean, AttachStdout: Boolean,
                              Cmd: Seq[String] = Seq.empty, Entrypoint: Seq[String] = Seq.empty, Env: Seq[String] = Seq.empty,
-                             Hostname: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String) {
+                             Hostname: String, Image: String, OpenStdin: Boolean, StdinOnce: Boolean, Tty: Boolean, User: String, WorkingDir: String) {
 
     // Workaround, Docker may return null
     val cmd = Option(Cmd).getOrElse(Seq.empty)
@@ -96,11 +97,12 @@ package object model {
   }
 
   case class NetworkSettings(IPAddress: String, Ports: Map[String, Seq[NetowrkSettingsPort]] = Map.empty) {
-        def ports: Seq[(String, String)] = Option(Ports).map { p =>
-          p.map { case (port, settingsPorts) =>
-            Option(settingsPorts).getOrElse(Seq.empty).map(_.HostPort).map((_, port))
-          }.flatten.toSeq
-        }.getOrElse(Seq.empty)
+    def ports: Seq[(String, String)] = Option(Ports).map { p =>
+      p.map { case (port, settingsPorts) =>
+        Option(settingsPorts).getOrElse(Seq.empty).map(_.HostPort).map((_, port))
+      }.flatten.toSeq
+    }.getOrElse(Seq.empty)
+
     //def ports: Seq[(String, String)] = Seq.empty
   }
 
@@ -112,6 +114,23 @@ package object model {
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#exec-start
   case class ExecStart(Detach: Boolean, Tty: Boolean)
 
+  //  https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-an-image
+  case class ImageInfo(Id: String, Created: String, Config: ContainerConfig, Architecture: String, Author: String, Comment: String, Container: String, DockerVersion: String, Os: String, Parent: String, Size: Int, VirtualSize: Int)
+
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#get-the-history-of-an-image
+  case class ImageHistory(Created: Int, CreatedBy: String, Id: String, Size: Int, Tags: Seq[String] = Seq.empty) {
+    def created = {
+      val timeStamp = Created.toLong * 1000L
+      Moment(timeStamp).fromNow()
+    }
+
+    def id = subId(Id) + tags
+
+    def tags = Option(Tags).getOrElse(Seq.empty).mkString(" ", ", ", " ")
+
+    def size = bytesToSize(Size)
+  }
+
 
   def bytesToSize(bytes: Int) = {
     val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB")
@@ -121,8 +140,8 @@ package object model {
       val i = Math.floor(Math.log(bytes) / Math.log(1024)).toInt
       Math.round(bytes / Math.pow(1024, i)) + " " + Sizes(i)
     }
-
   }
+
 
   def subId(id: String) = id.take(12)
 
