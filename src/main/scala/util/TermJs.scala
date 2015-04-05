@@ -1,7 +1,7 @@
 package util
 
 import org.scalajs.dom
-import org.scalajs.dom.raw.{Element, HTMLDivElement}
+import org.scalajs.dom.raw.Element
 
 import scala.scalajs.js
 import scala.scalajs.js.Object
@@ -30,13 +30,12 @@ object termJs {
 
 
   def autoResize(terminal: Terminal, element: Element) = {
-    // val div = element.parentNode.parentNode.asInstanceOf[HTMLDivElement]
-    val terminalWidth = element.asInstanceOf[HTMLDivElement].offsetWidth
     val width = dom.document.body.clientWidth
+
+    // get approximated size. TODO Find a better way to map between windows width and num columns
     val cols = (width / 6.8).toInt
     val extraCols = if (cols < 129) -3 else if (cols < 148) -2 else if (cols < 180) -1 else 0
     val fixedCols = cols + extraCols
-    println("terminal width:" + terminalWidth + " Parent width: " + width + ", cols: " + cols + "  " + fixedCols)
     terminal.resize(fixedCols, 20)
   }
 

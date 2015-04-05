@@ -23,22 +23,20 @@ object ContainerPage {
 
   case class Backend(t: BackendScope[Props, State]) {
 
-    def willStart(): Unit = {
-      t.props.ref.client.map { client =>
-        val result = for {
-          info <- client.containerInfo(t.props.containerId)
-          top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty[ContainerTop])
-        } yield t.modState(s => s.copy(Some(info), top))
+    def willStart(): Unit = t.props.ref.client.map { client =>
+      val result = for {
+        info <- client.containerInfo(t.props.containerId)
+        top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
+      } yield t.modState(s => s.copy(Some(info), top))
 
-        result.onFailure {
-          case ex: Exception =>
-            log.error("Unable to get Metadata", ex)
-            t.modState(s => s.copy(None, None, Some("Unable to get data: " + ex.getMessage)))
-        }
+      result.onFailure {
+        case ex: Exception =>
+          log.error("Unable to get Metadata", ex)
+          t.modState(s => s.copy(None, None, Some("Unable to get data: " + ex.getMessage)))
+      }
 
-        result.onSuccess {
-          case _ => t.modState(s => s.copy(tabSelected = TabTerminal))
-        }
+      result.onSuccess {
+        case _ => t.modState(s => s.copy(tabSelected = TabTerminal))
       }
     }
 
@@ -47,13 +45,11 @@ object ContainerPage {
         willStart()
       }
 
-
     def start() =
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
         t.modState(s => s.copy(tabSelected = TabNone))
         willStart()
       }
-
 
     def showTab(tab: ContainerPageTab) = {
       t.modState(s => s.copy(tabSelected = tab))
@@ -82,14 +78,18 @@ object ContainerPageRender {
   val component = ReactComponentB[Props]("ContainerPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => {
+    .render((P, S, B) => vdom(P, S, B))
+    .componentWillMount(_.backend.willStart())
+    .build
+
+
+  def vdom(P: Props, S: State, B: Backend): ReactElement =
     <.div(
       S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
       S.info.map(vdomInfo(_, S, P, B)),
       vDomTabs(S, B)
     )
-  }).componentWillMount(_.backend.willStart())
-    .build
+
 
   def vdomInfo(containerInfo: ContainerInfo, S: State, P: Props, B: Backend) = {
     val generalInfo = Map(
@@ -114,7 +114,6 @@ object ContainerPageRender {
       "Volumes" -> "---"
     )
 
-
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None,
         vdomCommands(S, B)
@@ -122,7 +121,6 @@ object ContainerPageRender {
       InfoCard(executionInfo),
       InfoCard(networkInfo, InfoCard.SMALL, None, vdomServiceUrl(containerInfo, P))
     )
-
   }
 
   def vdomServiceUrl(containerInfo: ContainerInfo, P: Props) = {
@@ -130,9 +128,9 @@ object ContainerPageRender {
     containerInfo.NetworkSettings.ports.map {
       case (external, internal) => ip + ":" + external
     }
-  }.map(url => <.div(^.className := "panel-footer", <.a(^.href := "http://" + url, ^.target := "_blank")(url))).headOption
+  }.map(url => <.div(^.className := "panel-footer", <.a(^.href := s"http://$url", ^.target := "_blank")(url))).headOption
 
-  def vdomCommands(state: State, B: Backend) = {
+  def vdomCommands(state: State, B: Backend) =
     Some(<.div(^.className := "panel-footer",
       <.div(^.className := "btn-group btn-group-justified",
         <.div(^.className := "btn-group",
@@ -146,9 +144,11 @@ object ContainerPageRender {
         )
       )
     ))
-  }
 
-  def vDomTabs(S: State, B: Backend) =
+
+  def vDomTabs(S: State, B: Backend) = {
+    val stdin = S.info.map(_.Config.AttachStdin).getOrElse(true)
+
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.ul(^.className := "nav nav-tabs",
@@ -160,18 +160,12 @@ object ContainerPageRender {
               <.a(^.onClick --> B.showTab(TabTop), "Top")
             ))
         ),
-        (S.tabSelected == TabTerminal) ?= TerminalCard(S.info.map(_.Config.AttachStdin).getOrElse(true)) { () =>
-          B.attach()
-        },
+        (S.tabSelected == TabTerminal) ?= TerminalCard(stdin)(B.attach),
         (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get
 
       )
     )
-
-
-  //  S.top.map(vdomTop),
-  //  S.terminalConnection.map(TerminalCard(_))
-
+  }
 
   def vdomTop(top: ContainerTop): ReactElement = {
     val keys = top.Titles

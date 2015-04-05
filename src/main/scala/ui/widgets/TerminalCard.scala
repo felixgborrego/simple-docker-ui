@@ -42,7 +42,6 @@ object TerminalCard {
 
 
       terminal.on("data", (data: String) => {
-        log.info("Terminal input:" + data)
         if (!t.props.stdinAttached) {
           terminal.write(data.toString.replace("\r", "\r\n"))
         }
@@ -76,9 +75,8 @@ object TerminalCardRender {
   val component = ReactComponentB[Props]("TerminalCard")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => {
-    vdom(S, P)
-  }).componentDidMount(_.backend.didMount())
+    .render((P, S, B) => vdom(S, P))
+    .componentDidMount(_.backend.didMount())
     .componentWillUnmount(_.backend.willUnmount())
     .build
 

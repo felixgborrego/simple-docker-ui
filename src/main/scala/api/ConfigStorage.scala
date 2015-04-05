@@ -1,30 +1,31 @@
 package api
 
 import model.Connection
-import util.chrome.Api._
-import util.chrome._
 import util.logger._
-
+import util.chrome.api._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 
 object ConfigStorage {
 
-  val PARAM_URL_CONNECTION = "url"
+  val DefaultMacUrl = "https://192.168.59.103:2376"
+  val DefaultLinuxUrl = "http://localhost:4243"
+  val DefaultWinUrl = ""
+  val ParamUrlConnection = "url"
 
-  def saveConnection(url: String) = save(PARAM_URL_CONNECTION, url)
+  def saveConnection(url: String) = save(ParamUrlConnection, url)
 
-  def getUrlConnection(): Future[Option[Connection]] = get(PARAM_URL_CONNECTION)
+  def getUrlConnection(): Future[Option[Connection]] = get(ParamUrlConnection)
     .map(url => Some(Connection(url)))
-    .recover{case _ => None}
+    .recover { case _ => None }
 
   def save(key: String, value: String): Future[Unit] = {
-    log.info("Saving " + key + " = " + value)
+    log.info(s"Saving $key = $value")
     val p = Promise[Unit]()
     val jsObject = scalajs.js.Dynamic.literal(key -> value)
     chrome.storage.local.set(jsObject, { () =>
-      log.info("'" + key + "' Saved")
+      log.info(s"'$key' Saved")
       p.success()
     })
     p.future
@@ -32,12 +33,11 @@ object ConfigStorage {
 
   def get(key: String): Future[String] = {
     val p = Promise[String]()
-    log.info("Getting " + key)
     chrome.storage.local.get(key, { result: js.Dynamic =>
       val value = result.selectDynamic(key).toString
-      log.info("Value recover from local storage:" + key + " = " + value)
+      log.info(s"Value recover from local storage: $key = $value")
       if (value == "undefined")
-        p.failure(new Exception("Key " + key + " not found"))
+        p.failure(new Exception(s"Key $key not found"))
       else
         p.success(value)
     })
@@ -45,17 +45,16 @@ object ConfigStorage {
   }
 
   def getDefaultUrl(): Future[String] = getOs().map {
-    case "mac" => "https://192.168.59.103:2376"
+    case "mac" => DefaultMacUrl
     case "win" => ""
-    case "linux" | "openbsd" => "http://localhost:4243"
-    case _ => ""
+    case "linux" | "openbsd" => DefaultLinuxUrl
+    case _ => DefaultWinUrl
   }
 
 
   private def getOs(): Future[String] = {
     val p = Promise[String]()
     chrome.runtime.getPlatformInfo { info: PlatformInfo =>
-      log.info("getPlatformInfo: " + info.os)
       p.success(info.os)
     }
     p.future

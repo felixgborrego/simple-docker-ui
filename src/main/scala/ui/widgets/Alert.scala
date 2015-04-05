@@ -16,11 +16,9 @@ private object AlertRender {
   import ui.widgets.Alert.Props
 
   val component = ReactComponentB[Props]("AppHeader")
-    .render((P) =>
-    vdom(P)
-    ).build
+    .render((P) => vdom(P))
+    .build
 
-  // data-dismiss="alert"
   final val dataDismiss = "data-dismiss".reactAttr
 
   def vdom(props: Props) =

@@ -19,17 +19,17 @@ case object HomePage extends Page {
   case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
-    def willStart(): Unit = {
-      t.props.ref.client.map { client =>
-        client.metadata().map { docker =>
-          t.modState(s => State(Some(docker)))
-        }.onFailure {
-          case ex: Exception =>
-            log.error("Unable to get Metadata", ex)
-            t.modState(s => s.copy(error = Some("Unable to get data from " + t.props.ref.connection.fold("''")(_.url))))
-        }
+    def willStart(): Unit = t.props.ref.client.map { client =>
+      client.metadata().map { docker =>
+        t.modState(s => State(Some(docker)))
+      }.onFailure {
+        case ex: Exception =>
+          log.error("Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some("Unable to get data from " + t.props.ref.connection.getOrElse("''"))))
       }
     }
+
+    def refresh() = willStart()
   }
 
   def component(ref: WorkbenchRef) = {
@@ -46,23 +46,22 @@ object HomePageRender {
   val component = ReactComponentB[Props]("HomePage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => {
-    vdom(S, P)
-  }).componentWillMount(_.backend.willStart())
+    .render((P, S, B) => vdom(S, P, B))
+    .componentWillMount(_.backend.willStart())
     .build
 
-  def vdom(S: State, P: Props) = <.div(
+  def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    S.info.map(vdomInfo(_, P.ref))
+    S.info.map(vdomInfo(_, P.ref, B))
   )
 
-  def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef) = {
+  def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef, B: Backend) = {
     val info = Map(
       "Connected to" -> docker.connection.url,
-      "Version" -> (docker.version.Version + "(api: " + docker.version.ApiVersion + ")")
+      "Version" -> s"${docker.version.Version} (api: ${docker.version.ApiVersion})"
     )
     <.div(
-      ContainersCard(docker, ref),
+      ContainersCard(docker, ref)(() => B.refresh()),
       InfoCard(info, InfoCard.SMALL, Some("System"))
     )
   }

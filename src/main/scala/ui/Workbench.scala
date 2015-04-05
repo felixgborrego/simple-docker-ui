@@ -8,7 +8,7 @@ import model._
 import ui.Workbench.{Backend, State}
 import ui.pages.{EmptyPage, HomePage, Page, SettingsPage}
 import ui.widgets.Header
-import util.GoogleAnalytics
+import util.googleAnalytics._
 import util.logger.log
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,40 +21,39 @@ object Workbench {
 
   case class Backend(t: BackendScope[Props, State]) {
 
-    val tracker = GoogleAnalytics()
-
-
     def show(page: Page) = t.modState { s =>
-      log.info("page: " + page)
-      tracker.sendAppView(page.id)
+      sendAppView(page.id)
       Workbench.State(Some(page), s.connection)
     }
 
     def componentWillMount() = connectSaveConnection()
 
 
-    def connectSaveConnection():Unit = ConfigStorage.getUrlConnection().map { connection =>
+    def connectSaveConnection(): Unit = ConfigStorage.getUrlConnection().map { connection =>
       t.modState(_.copy(connection = connection))
       connection match {
-        case Some(url) => show(HomePage)
+        case Some(url) => {
+          sendEvent("ConnectedWitSavedConnection")
+          show(HomePage)
+        }
         case None => tryDefaultConnection()
       }
     }
 
     def tryDefaultConnection() = {
-      println("test1")
       val test = for {
         client <- ConfigStorage.getDefaultUrl().map(Connection).map(DockerClient)
-        _ <- client.ping().map(_ =>   println("test2"))
-        _ <- ConfigStorage.saveConnection(client.connection.url).map(_ =>   println("test3"))
+        _ <- client.ping().map(_ => sendEvent("ConnectedWithDefaultConnection"))
+        _ <- ConfigStorage.saveConnection(client.connection.url)
       } yield connectSaveConnection()
 
       test.onFailure { case _ => show(SettingsPage) }
+
     }
 
     def reconnect(): Unit =
       ConfigStorage.getUrlConnection().map { connection =>
-        log.info("workbench reconnected to " + connection)
+        log.info(s"workbench reconnected to $connection")
         t.modState(s => s.copy(connection = connection))
       }
 
@@ -75,12 +74,16 @@ object WorkbenchRender {
   val component = ReactComponentB[Props]("Workbench")
     .initialState(State(None, None))
     .backend(new Backend(_))
-    .render((P, S, B) => {
+    .render((P, S, B) => vdom(S, B))
+    .componentWillMount(_.backend.componentWillMount())
+    .build
+
+  def vdom(S: State, B: Backend) =
     <.div(
       Header(WorkbenchRef(S, B)),
       S.selectedPage.map(_.component(WorkbenchRef(S, B)))
     )
-  }).componentWillMount(_.backend.componentWillMount()).build
+
 }
 
 case class WorkbenchRef(state: State, backend: Backend) {

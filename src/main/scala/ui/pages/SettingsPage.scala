@@ -6,6 +6,7 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import ui.WorkbenchRef
 import ui.widgets.Alert
+import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -35,19 +36,20 @@ object SettingsPage extends Page {
 
     def save(): Unit = {
       val url = t.state.url
-      log.info("Saving " + url)
       if (url.startsWith("http")) {
         DockerClient(Connection(url)).ping().onComplete {
           case Success(_) =>
+            sendEvent("SettingsSavedConnection")
             t.modState(s => State(url, None))
             ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
           case Failure(e) => {
-            log.info("Unable to connected to " + url)
-            t.modState(s => s.copy(url, Some("Unable to connected to " + url)))
+            log.info(s"Unable to connected to $url")
+            t.modState(s => s.copy(url, Some(s"Unable to connected to $url")))
           }
         }
       } else {
-        log.info("Unable to connect to " + url)
+        sendEvent("SettingsUnableToConnect")
+        log.info("Invalid $url")
       }
     }
 

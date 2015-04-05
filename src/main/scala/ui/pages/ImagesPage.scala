@@ -18,15 +18,13 @@ object ImagesPage extends Page {
   case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
-    def willStart(): Unit = {
-      t.props.ref.client.map { client =>
-        client.images().map { images =>
-          t.modState(s => State(images))
-        }.onFailure {
-          case ex: Exception =>
-            log.error("Unable to get Metadata", ex)
-            t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
-        }
+    def willStart(): Unit = t.props.ref.client.map { client =>
+      client.images().map { images =>
+        t.modState(s => State(images))
+      }.onFailure {
+        case ex: Exception =>
+          log.error("Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
       }
     }
   }
@@ -45,9 +43,8 @@ object ImagesPageRender {
   val component = ReactComponentB[Props]("ImagesPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => {
-    vdom(S)
-  }).componentWillMount(_.backend.willStart())
+    .render((P, S, B) => vdom(S))
+    .componentWillMount(_.backend.willStart())
     .build
 
 
@@ -69,6 +66,5 @@ object ImagesPageRender {
       )
     )
   )
-
 
 }

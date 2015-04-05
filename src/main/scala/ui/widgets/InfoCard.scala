@@ -21,9 +21,8 @@ object InfoCardRender {
   import InfoCard._
 
   val component = ReactComponentB[Props]("InfoCard")
-    .render((P) =>
-    vdom(P)
-    ).build
+    .render((P) => vdom(P))
+    .build
 
   def vdom(props: Props) =
     <.div(^.className := "container  col-sm-" + props.size,

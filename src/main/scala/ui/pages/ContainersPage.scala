@@ -18,15 +18,13 @@ object ContainersPage extends Page {
   case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
-    def willStart(): Unit = {
-      t.props.ref.client.map { client =>
-        client.containersInfo().map { info =>
-          t.modState(s => State(info))
-        }.onFailure {
-          case ex: Exception =>
-            log.error("Unable to get Metadata", ex)
-            t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
-        }
+    def willStart(): Unit = t.props.ref.client.map { client =>
+      client.containersInfo().map { info =>
+        t.modState(s => State(info))
+      }.onFailure {
+        case ex: Exception =>
+          log.error("Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
       }
     }
   }
@@ -44,9 +42,8 @@ object ContainersPageRender {
   val component = ReactComponentB[Props]("ContainerPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => {
-    vdom(S, P)
-  }).componentWillMount(_.backend.willStart())
+    .render((P, S, B) => vdom(S, P))
+    .componentWillMount(_.backend.willStart())
     .build
 
   def vdom(S: State, P: Props) = <.div(
@@ -90,6 +87,4 @@ object ContainersPageRender {
         )
       )
     )
-
-
 }

@@ -3,7 +3,7 @@ package ui.widgets
 
 import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.vdom.prefix_<^._
-import ui.{WorkbenchRef, Workbench}
+import ui.WorkbenchRef
 import ui.pages._
 
 
@@ -11,7 +11,8 @@ object Header {
 
   case class Props(workbenchRef: WorkbenchRef) {
 
-    def selected:Page = workbenchRef.selectedPage
+    def selected: Page = workbenchRef.selectedPage
+
     val Active = Some("active")
 
     def isHomeActive = if (selected.id == HomePage.id) Active else None
@@ -35,13 +36,11 @@ object HeaderRender {
   import ui.widgets.Header._
 
   val component = ReactComponentB[Props]("AppHeader")
-    .render((P) =>
-    vdom(P)
-    ).build
+    .render((P) => vdom(P))
+    .build
 
 
-  def vdom(props: Props) = {
-
+  def vdom(props: Props) =
     <.nav(^.className := "navbar navbar-default", ^.role := "navigation",
       <.div(^.className := "navbar-header",
         <.a(^.href := "#", ^.className := "navbar-brand",
@@ -57,5 +56,5 @@ object HeaderRender {
         )
       )
     )
-  }
+
 }

@@ -1,7 +1,8 @@
 package ui.widgets
 
-import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.{BackendScope, ReactComponentB}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -9,9 +10,10 @@ object Button {
 
   case class State(running: Boolean = false)
 
-  case class Props(val text: String, val icon: String,var command: () =>Future[Any])
+  case class Props(val text: String, val icon: String, var command: () => Future[Any])
 
   case class Backend(t: BackendScope[Props, State]) {
+
     def className =
       if (t.state.running)
         "glyphicon glyphicon-refresh glyphicon-spin"
