@@ -27,6 +27,8 @@ object ContainersPage extends Page {
           t.modState(s => s.copy(error = Some("Unable to get data: " + ex.getMessage)))
       }
     }
+
+    def refresh() = willStart()
   }
 
   def component(ref: WorkbenchRef) = {
@@ -42,22 +44,22 @@ object ContainersPageRender {
   val component = ReactComponentB[Props]("ContainerPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => vdom(S, P))
+    .render((P, S, B) => vdom(S, P, B))
     .componentWillMount(_.backend.willStart())
     .build
 
-  def vdom(S: State, P: Props) = <.div(
+  def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    table(true, "Container Running", S.info.running, P),
-    table(true, "History", S.info.history, P)
+    table(true, "Container Running", S.info.running, P, B),
+    table(true, "History", S.info.history, P, B)
   )
 
-  def table(showLinks: Boolean, title: String, containers: Seq[Container], props: Props) =
+  def table(showLinks: Boolean, title: String, containers: Seq[Container], props: Props, B: Backend) =
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left")(title),
-          <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#")
+          <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#", ^.onClick --> B.refresh)
         ),
         <.table(^.className := "table table-hover",
           <.thead(
