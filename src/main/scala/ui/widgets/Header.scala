@@ -49,10 +49,10 @@ object HeaderRender {
       ),
       <.div(^.id := "navbarCollapse", ^.className := "collapse navbar-collapse",
         <.ul(^.className := "nav navbar-nav",
-          <.li(^.className := props.isHomeActive, props.workbenchRef.link(HomePage)("Home")),
-          <.li(^.className := props.isContainerActive, props.workbenchRef.link(ContainersPage)("Containers")),
-          <.li(^.className := props.isImagesActive, props.workbenchRef.link(ImagesPage)("Images")),
-          <.li(^.className := props.isSettingsActive, props.workbenchRef.link(SettingsPage)("Settings"))
+          <.li(^.className := props.isHomeActive, props.workbenchRef.link(HomePage)(<.span( ^.className := "glyphicon glyphicon-home")," Home")),
+          <.li(^.className := props.isContainerActive, props.workbenchRef.link(ContainersPage)(<.span( ^.className := "glyphicon glyphicon-equalizer")," Containers")),
+          <.li(^.className := props.isImagesActive, props.workbenchRef.link(ImagesPage)(<.span( ^.className := "glyphicon glyphicon-picture")," Images")),
+          <.li(^.className := props.isSettingsActive, props.workbenchRef.link(SettingsPage)(<.span( ^.className := "glyphicon glyphicon-wrench")," Settings"))
         )
       )
     )

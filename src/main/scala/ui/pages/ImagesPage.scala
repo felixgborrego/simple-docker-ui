@@ -57,7 +57,7 @@ object ImagesPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")(title)
+          <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title)
         ),
         <.table(^.className := "table table-hover",
           <.thead(

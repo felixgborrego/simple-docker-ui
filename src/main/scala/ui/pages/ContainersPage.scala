@@ -50,21 +50,21 @@ object ContainersPageRender {
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    table(true, "Container Running", S.info.running, P, B),
-    table(true, "History", S.info.history, P, B)
+    table("glyphicon glyphicon-transfer", "Container Running", S.info.running, P, B),
+    table("glyphicon glyphicon-equalizer", "History", S.info.history, P, B)
   )
 
-  def table(showLinks: Boolean, title: String, containers: Seq[Container], props: Props, B: Backend) =
+  def table(iconClassName: String, title: String, containers: Seq[Container], props: Props, B: Backend) =
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")(title),
+          <.h3(^.className := "panel-title pull-left")(<.span(^.className := iconClassName), " " + title),
           <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#", ^.onClick --> B.refresh)
         ),
-        <.table(^.className := "table table-hover",
+        <.table(^.className := "table table-hover table-striped",
           <.thead(
             <.tr(
-              Some(<.th("Id")).filter(_ => showLinks),
+              <.th("Id"),
               <.th("Image"),
               <.th("Command"),
               <.th("Ports"),
@@ -75,9 +75,7 @@ object ContainersPageRender {
           <.tbody(
             containers.map { c =>
               <.tr(
-                Some(<.td(
-                  props.ref.link(ContainerPage(c.Id, props.ref))(c.id)))
-                  .filter(_ => showLinks),
+                <.td(props.ref.link(ContainerPage(c.Id, props.ref))(c.id)),
                 <.td(c.Image),
                 <.td(c.Command),
                 <.td(c.ports.map(<.div(_))),
