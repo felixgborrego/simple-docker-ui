@@ -99,7 +99,7 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", "Mac OS config")
+              <.h3(^.className := "panel-title",<.i(^.className := "fa fa-apple"), " Mac OS config")
             ),
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
@@ -122,7 +122,7 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", "Linux config")
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-linux")," Linux config")
             ),
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",

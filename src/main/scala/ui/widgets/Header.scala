@@ -39,22 +39,32 @@ object HeaderRender {
     .render((P) => vdom(P))
     .build
 
+  val data_toggle = "data-toggle".reactAttr
+  val data_target = "data-target".reactAttr
 
   def vdom(props: Props) =
-    <.nav(^.className := "navbar navbar-default", ^.role := "navigation",
-      <.div(^.className := "navbar-header",
-        <.a(^.href := "#", ^.className := "navbar-brand",
-          <.img(^.src := "./img/logo_small.png", ^.className := "img-rounded")
-        )
-      ),
-      <.div(^.id := "navbarCollapse", ^.className := "collapse navbar-collapse",
-        <.ul(^.className := "nav navbar-nav",
-          <.li(^.className := props.isHomeActive, props.workbenchRef.link(HomePage)(<.span( ^.className := "glyphicon glyphicon-home")," Home")),
-          <.li(^.className := props.isContainerActive, props.workbenchRef.link(ContainersPage)(<.span( ^.className := "glyphicon glyphicon-equalizer")," Containers")),
-          <.li(^.className := props.isImagesActive, props.workbenchRef.link(ImagesPage)(<.span( ^.className := "glyphicon glyphicon-picture")," Images")),
-          <.li(^.className := props.isSettingsActive, props.workbenchRef.link(SettingsPage)(<.span( ^.className := "glyphicon glyphicon-wrench")," Settings"))
-        )
-      )
-    )
+    <.nav(^.className := "navbar navbar-default navbar-fixed-top", ^.role := "navigation",
+      //<.div(^.className := "container-fluid",
+        <.div(^.className := "navbar-header",
+          <.a(^.href := "#", ^.className := "navbar-brand",
+            <.img(^.src := "./img/logo_small.png", ^.className := "img-rounded")
+          ),
+          <.button(^.`type` := "button", ^.className := "navbar-toggle collapsed", data_toggle := "collapse", data_target := "#navbarCollapse",
+            <.span(^.className := "sr-only")("Toggle navigation"),
+            <.span(^.className := "icon-bar"),
+            <.span(^.className := "icon-bar"),
+            <.span(^.className := "icon-bar")
+          )
+        ),
 
+        <.div(^.id := "navbarCollapse", ^.className := "collapse navbar-collapse",
+          <.ul(^.className := "nav navbar-nav",
+            <.li(^.className := props.isHomeActive, props.workbenchRef.link(HomePage)(<.span(^.className := "glyphicon glyphicon-home"), " Home")),
+            <.li(^.className := props.isContainerActive, props.workbenchRef.link(ContainersPage)(<.span(^.className := "glyphicon glyphicon-equalizer"), " Containers")),
+            <.li(^.className := props.isImagesActive, props.workbenchRef.link(ImagesPage)(<.span(^.className := "glyphicon glyphicon-picture"), " Images")),
+            <.li(^.className := props.isSettingsActive, props.workbenchRef.link(SettingsPage)(<.span(^.className := "glyphicon glyphicon-wrench"), " Settings"))
+          )
+        )
+    //  )
+    )
 }

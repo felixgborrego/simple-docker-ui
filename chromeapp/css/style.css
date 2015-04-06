@@ -38,6 +38,10 @@ i.glyphicon3x {
   padding-top: 5px;
 }
 
+.navbar-collapse{
+  background-color: #FFFFFF;
+}
+
 .glyphicon-spin {
     -webkit-animation: spin 1000ms infinite linear;
     animation: spin 1000ms infinite linear;
