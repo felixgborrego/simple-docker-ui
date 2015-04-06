@@ -1,8 +1,8 @@
 package ui.pages
 
 import japgolly.scalajs.react.vdom.prefix_<^._
-import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.Image
+import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
+import model._
 import ui.WorkbenchRef
 import ui.widgets.Alert
 import util.logger._
@@ -13,20 +13,51 @@ object ImagesPage extends Page {
 
   val id = "Images"
 
-  case class State(localImages: Seq[Image] = Seq.empty, error: Option[String] = None)
+  case class State(localImages: Seq[Image] = Seq.empty,
+                   remoteImages: Seq[ImageSearch] = Seq.empty,
+                   searching: Boolean = false,
+                   error: Option[String] = None) {
+    def searchIcon =
+      if (searching)
+        "glyphicon glyphicon-refresh glyphicon-spin"
+      else
+        "glyphicon glyphicon-search"
+  }
 
   case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
     def willStart(): Unit = t.props.ref.client.map { client =>
       client.images().map { images =>
-        t.modState(s => State(images))
+        t.modState(s => s.copy(localImages = images))
       }.onFailure {
         case ex: Exception =>
           log.error("ImagesPage", "Unable to get Metadata", ex)
           t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
     }
+
+    val MinTextSize = 3
+
+    def onTextChange(e: ReactEventI): Unit = t.props.ref.client.map { client =>
+      val text = e.target.value
+      if (text.isEmpty) {
+        t.modState(s => s.copy(remoteImages = Seq.empty, searching = false))
+      } else if (text.length > MinTextSize || t.state.remoteImages.nonEmpty) {
+        t.modState(s => s.copy(searching = true))
+        client.imagesSearch(text).map { images =>
+          log.info(s"images ${images.size}")
+          t.modState(s => s.copy(remoteImages = images, searching = false))
+        }.onFailure {
+          case ex: Exception =>
+            log.error("ImagesPage", "Unable to get Metadata", ex)
+            t.modState(s => s.copy(error = Some(s"Unable to connect")))
+        }
+      }
+    }
+
+    def showImage(image: ImageSearch): Unit = {}
+
   }
 
   def component(ref: WorkbenchRef) = {
@@ -43,13 +74,14 @@ object ImagesPageRender {
   val component = ReactComponentB[Props]("ImagesPage")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => vdom(S, P))
+    .render((P, S, B) => vdom(S, P, B))
     .componentWillMount(_.backend.willStart())
     .build
 
 
-  def vdom(S: State, P: Props) = <.div(
+  def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, None)),
+    remoteSearch(S, P, B),
     table("Local images", S.localImages, P)
   )
 
@@ -59,7 +91,7 @@ object ImagesPageRender {
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title)
         ),
-        <.table(^.className := "table table-hover",
+        <.table(^.className := "table table-hover table-striped",
           <.thead(
             <.tr(
               <.th("Id"),
@@ -81,5 +113,43 @@ object ImagesPageRender {
         )
       )
     )
+
+  def remoteSearch(S: State, P: Props, B: Backend) =
+    <.div(
+      <.div(^.className := "container  col-sm-2"),
+      <.div(^.className := "container  col-sm-8",
+        <.div(^.className := "bootcards-list ",
+          <.div(^.className := "panel panel-default",
+            <.div(^.className := "panel-body",
+              <.form(^.className := "form-horizontal",
+                <.div(^.className := "form-group",
+                  <.label(^.className := "col-sm-3 control-label")(<.span(^.className := S.searchIcon), " Registry Hub"),
+                  <.div(^.className := "col-sm-9",
+                    <.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "Search Images...", ^.onChange ==> B.onTextChange)
+                  )
+                )
+              )
+            ),
+            remoteList(S, P, B)
+          )
+        )
+      ),
+      <.div(^.className := "container  col-sm-2")
+    )
+
+  def remoteList(S: State, P: Props, B: Backend) =
+    <.div(^.className := "list-group",
+      S.remoteImages.map { image =>
+        <.a(^.className := "list-group-item", ^.onClick --> B.showImage(image),
+          (image.is_official) ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
+          (image.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-right")(image.star_count),
+          (image.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-right")(image.star_count),
+          <.h4(^.className := "list-group-item-heading", image.name),
+          <.p(^.className := "list-group-item-text", image.description)
+        )
+
+      }
+    )
+
 
 }

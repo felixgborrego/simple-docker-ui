@@ -169,7 +169,7 @@ object ContainerPageRender {
                 Button("Star", "glyphicon-play")(B.start)
           }),
         <.div(^.className := "btn-group",
-          Button("Star", "glyphicon-trash")(B.remove)
+          Button("Remove", "glyphicon-trash")(B.remove)
         )
       )
     ))

@@ -15,4 +15,19 @@ object stringUtils {
       case i => s.substring(0, i)
     }
   }
+
+
+  def bytesToSize(bytes: Int) = {
+    val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB")
+    if (bytes == 0) {
+      "0 Byte"
+    } else {
+      val i = Math.floor(Math.log(bytes) / Math.log(1024)).toInt
+      Math.round(bytes / Math.pow(1024, i)) + " " + Sizes(i)
+    }
+  }
+
+
+  def subId(id: String) = id.take(12)
+
 }

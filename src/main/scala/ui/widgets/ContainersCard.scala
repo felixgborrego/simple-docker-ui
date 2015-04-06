@@ -27,7 +27,7 @@ object ContainersCardRender {
     <.div(^.className := "container  col-sm-8",
       <.div(^.className := "panel panel-default bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")("Containers"),
+          <.h3(^.className := "panel-title pull-left")(<.i(^.className:="fa fa-pie-chart")," Containers"),
           <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.onClick --> P.refresh())
         ),
 

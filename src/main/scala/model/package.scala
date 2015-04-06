@@ -1,4 +1,5 @@
 import util.momentJs.Moment
+import util.stringUtils._
 
 package object model {
 
@@ -131,19 +132,6 @@ package object model {
     def size = bytesToSize(Size)
   }
 
-
-  def bytesToSize(bytes: Int) = {
-    val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB")
-    if (bytes == 0) {
-      "0 Byte"
-    } else {
-      val i = Math.floor(Math.log(bytes) / Math.log(1024)).toInt
-      Math.round(bytes / Math.pow(1024, i)) + " " + Sizes(i)
-    }
-  }
-
-
-  def subId(id: String) = id.take(12)
-
-
+  //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#search-images
+  case class ImageSearch(description: String, is_official: Boolean, name: String, star_count: Int)
 }

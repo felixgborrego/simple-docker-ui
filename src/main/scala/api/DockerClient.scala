@@ -77,16 +77,21 @@ case class DockerClient(connection: Connection) {
 
   def imageInfo(imageId: String): Future[ImageInfo] =
     Ajax.get(s"$url/images/$imageId/json", timeout = HttpTimeOut).map { xhr =>
-      log.debug("[dockerClient.imageInfo] return: " + xhr.responseText)
+      log.debug("[dockerClient.imageInfo] ")
       read[ImageInfo](xhr.responseText)
     }
 
   def imageHistory(imageId: String): Future[Seq[ImageHistory]] =
     Ajax.get(s"$url/images/$imageId/history", timeout = HttpTimeOut).map { xhr =>
-      log.debug("[dockerClient.imageHistory] return: " + xhr.responseText)
+      log.debug("[dockerClient.imageHistory]")
       read[Seq[ImageHistory]](xhr.responseText)
     }
 
+  def imagesSearch(term: String): Future[Seq[ImageSearch]] =
+    Ajax.get(s"$url/images/search?term=${term.toLowerCase}", timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.imagesSearch]")
+      read[Seq[ImageSearch]](xhr.responseText)
+    }
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
   private def containers(all: Boolean): Future[Seq[Container]] =
