@@ -4,7 +4,8 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import ui.WorkbenchRef
-import ui.widgets.Alert
+import ui.widgets.PullModalDialog.ProgressState
+import ui.widgets.{Alert, PullModalDialogRender,PullModalDialog}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,6 +17,7 @@ object ImagesPage extends Page {
   case class State(localImages: Seq[Image] = Seq.empty,
                    remoteImages: Seq[ImageSearch] = Seq.empty,
                    searching: Boolean = false,
+                   progressState: Option[ProgressState] = None,
                    error: Option[String] = None) {
     def searchIcon =
       if (searching)
@@ -56,8 +58,31 @@ object ImagesPage extends Page {
       }
     }
 
-    def showImage(image: ImageSearch): Unit = {}
+    def showDetail(image: ImageSearch) = {
+      t.modState(s => s.copy(progressState = Some(ProgressState(remoteImageSelected = image))))
+    }
 
+
+    def pullImage(): Unit = t.props.ref.client.map { client =>
+      t.state.progressState match {
+        case None =>
+        case Some(progress) =>
+          client.pullImage(progress.remoteImageSelected.name) { updates =>
+            t.modState(s => s.copy(progressState = Some(progress.copy(events = updates, running = true))))
+          }.map { done =>
+            log.info("Pull is done!")
+            client.images().map { images =>
+              log.info("Refresh ui!")
+              t.modState(s => s.copy(
+                localImages = images,
+                remoteImages = Seq.empty,
+                searching = false,
+                progressState = Some(progress.copy(events = done, running = false, finished = true))
+              ))
+            }
+          }
+      }
+    }
   }
 
   def component(ref: WorkbenchRef) = {
@@ -80,9 +105,10 @@ object ImagesPageRender {
 
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
-    S.error.map(Alert(_, None)),
+    S.error.map(Alert(_)),
     remoteSearch(S, P, B),
-    table("Local images", S.localImages, P)
+    table("Local images", S.localImages, P),
+    PullModalDialogRender.vdom(S, B)
   )
 
   def table(title: String, images: Seq[Image], P: Props) =
@@ -137,11 +163,16 @@ object ImagesPageRender {
       <.div(^.className := "container  col-sm-2")
     )
 
+
+  var data_toggle = "data-toggle".reactAttr
+  val data_target = "data-target".reactAttr
+
+
   def remoteList(S: State, P: Props, B: Backend) =
     <.div(^.className := "list-group",
       S.remoteImages.map { image =>
-        <.a(^.className := "list-group-item", ^.onClick --> B.showImage(image),
-          (image.is_official) ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
+        <.a(^.className := "list-group-item", ^.onClick --> B.showDetail(image), data_toggle := "modal", data_target := "#editModal",
+          image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
           (image.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-right")(image.star_count),
           (image.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-right")(image.star_count),
           <.h4(^.className := "list-group-item-heading", image.name),

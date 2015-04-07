@@ -94,3 +94,11 @@ div {
     //position:fixed;
     height:100%;
 }
+
+.modal-backdrop {
+    z-index:100; /* default makes modal be hidden behind the modal-backdrop div.*/
+}
+
+.noborder {
+    border: 0px;
+}

@@ -5,10 +5,10 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 
 object Alert {
 
-  case class Props(msg: String, links: Option[ReactTag])
+  case class Props(msg: String, links: Option[ReactTag], style: String)
 
-  def apply(msg: String, links: Option[ReactTag] = None) =
-    AlertRender.component(Props(msg, links))
+  def apply(msg: String, links: Option[ReactTag] = None, style: String = "warning") =
+    AlertRender.component(Props(msg, links, style))
 }
 
 private object AlertRender {
@@ -23,7 +23,7 @@ private object AlertRender {
 
   def vdom(props: Props) =
     <.div(^.className := "panel",
-      <.div(^.className := "alert alert-warning",
+      <.div(^.className := s"alert alert-${props.style}",
         props.msg, <.br(),
         props.links.map(_("Go to Settings")(^.className := "alert-link"))
       )

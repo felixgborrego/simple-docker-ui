@@ -134,4 +134,14 @@ package object model {
 
   //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#search-images
   case class ImageSearch(description: String, is_official: Boolean, name: String, star_count: Int)
+
+  case class PullProgressEvent(status: String = "", id: String = "", progressDetail: ProgressEventDetail = ProgressEventDetail(), progress: String = "")
+
+  case class ProgressEventDetail(current: Int = 0, total: Int = 0, start: Int = 0) {
+    def startM = {
+      val timeStamp = start.toLong * 1000L
+      Moment(timeStamp).fromNow()
+    }
+  }
+
 }

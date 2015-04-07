@@ -69,20 +69,23 @@ object ImagePageRender {
     val generalInfo = Map(
       "Id" -> P.image.id,
       "Name" -> substringBefore(P.image.RepoTags.headOption.getOrElse(""), ":"),
-      "Tags" -> P.image.RepoTags.map(substringAfter(_, ":")).mkString(", "),
-      "Created" -> P.image.created
+      "Tags" -> P.image.RepoTags.map(substringAfter(_, ":")).mkString(", ")
     )
     val executionInfo = Map(
-      "Author" -> imageInfo.Author,
-      "Os" -> imageInfo.Os,
       "Command" -> imageInfo.Config.cmd.mkString(" "),
       "Environment" -> imageInfo.Config.env.mkString(" "),
       "WorkingDir" -> imageInfo.Config.WorkingDir
+    )
+    val extraInfo = Map(
+      "Author" -> imageInfo.Author,
+      "Os" -> imageInfo.Os,
+      "Created" -> P.image.created
     )
 
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None),
       InfoCard(executionInfo),
+      InfoCard(extraInfo),
       vdomHistory(S.history)
     )
   }

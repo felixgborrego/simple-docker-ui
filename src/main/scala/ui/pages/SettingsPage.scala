@@ -42,10 +42,9 @@ object SettingsPage extends Page {
             sendEvent("SettingsSavedConnection")
             t.modState(s => State(url, None))
             ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
-          case Failure(e) => {
+          case Failure(e) =>
             log.info(s"Unable to connected to $url")
             t.modState(s => s.copy(url, Some(s"Unable to connected to $url")))
-          }
         }
       } else {
         sendEvent("SettingsUnableToConnect")
@@ -99,7 +98,7 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title",<.i(^.className := "fa fa-apple"), " Mac OS config")
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-apple"), " Mac OS config")
             ),
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
@@ -114,7 +113,7 @@ object SettingsPageRender {
                       <.code("security import ~/.boot2docker/certs/boot2docker-vm/cert.pem  -k ~/Library/Keychains/login.keychain")
                     ),
                     <.li("Figure out the boot2docker ip using ", <.code("boot2docker ip")),
-                    <.li("Try to reconnect!")
+                    <.li("Try to reconnect! (you may need to restart Chrome)")
                   )
                 )
               )
@@ -122,7 +121,7 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-linux")," Linux config")
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-linux"), " Linux config")
             ),
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",

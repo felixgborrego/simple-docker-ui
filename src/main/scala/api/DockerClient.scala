@@ -7,7 +7,8 @@ import upickle._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
+import scala.util.Try
 
 case class DockerClient(connection: Connection) {
 
@@ -71,7 +72,7 @@ case class DockerClient(connection: Connection) {
   //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-images
   def images(): Future[Seq[Image]] =
     Ajax.get(s"$url/images/json", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.images] return: " + xhr.responseText)
+      log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
     }
 
@@ -120,6 +121,33 @@ case class DockerClient(connection: Connection) {
     val ws = schema + substringAfter(s"$url/containers/$containerId/attach/ws?logs=1&stderr=1&stdout=1&stream=1&stdin=1", "://")
     log.info(s"[dockerClient.attach] url: $ws")
     new WebSocket(ws)
+  }
+
+  def pullImage(term: String)(update: Seq[PullProgressEvent] => Unit): Future[Seq[PullProgressEvent]] = {
+    val Loading = 3
+    val Done = 4
+    val p = Promise[Seq[PullProgressEvent]]
+    val xhr = new XMLHttpRequest()
+
+    // Using here a 'custom' streaming json parser
+    def parse(data: String): Seq[PullProgressEvent] = data.split( """{"status":""")
+      .map(element => """{"status":""" + element)
+      .map(text => Try(Some(read[PullProgressEvent](text))).getOrElse(None))
+      .flatten.toSeq
+
+    xhr.onreadystatechange = { event: Event =>
+      log.info(s"[dockerClient.pullImage] onreadystatechange: " + xhr.readyState)
+      if (xhr.readyState == Loading) {
+        update(parse(xhr.responseText))
+      } else if (xhr.readyState == Done) {
+        p.success(parse(xhr.responseText))
+      }
+    }
+
+    xhr.open("POST", s"$url/images/create?fromImage=$term", true)
+    log.info(s"[dockerClient.pullImage] start")
+    xhr.send()
+    p.future
   }
 
 }
