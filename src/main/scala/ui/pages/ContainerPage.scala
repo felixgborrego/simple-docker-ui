@@ -169,7 +169,10 @@ object ContainerPageRender {
                 Button("Star", "glyphicon-play")(B.start)
           }),
         <.div(^.className := "btn-group",
-          Button("Remove", "glyphicon-trash")(B.remove)
+          if (state.info.map(_.State.Running).getOrElse(false))
+            Button("Remove", "glyphicon-trash",disabled=true)(B.remove)
+          else
+            Button("Remove", "glyphicon-trash")(B.remove)
         )
       )
     ))

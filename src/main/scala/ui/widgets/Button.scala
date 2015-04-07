@@ -10,7 +10,7 @@ object Button {
 
   case class State(running: Boolean = false)
 
-  case class Props(val text: String, val icon: String, var command: () => Future[Any])
+  case class Props(text: String, icon: String, disabled: Boolean, command: () => Future[Any])
 
   case class Backend(t: BackendScope[Props, State]) {
 
@@ -30,8 +30,8 @@ object Button {
     }
   }
 
-  def apply(text: String, icon: String)(command: => Future[Any]) =
-    ButtonRender.component(Props(text, icon, () => command))
+  def apply(text: String, icon: String, disabled: Boolean = false)(command: => Future[Any]) =
+    ButtonRender.component(Props(text, icon, disabled, () => command))
 }
 
 private object ButtonRender {
@@ -41,11 +41,12 @@ private object ButtonRender {
   val component = ReactComponentB[Props]("Button")
     .initialState(State())
     .backend(new Backend(_))
-    .render((P, S, B) => vdom(B))
+    .render((P, S, B) => vdom(P, S, B))
     .build
 
-  def vdom(B: Backend) =
+  def vdom(P: Props, S: State, B: Backend) =
     <.button(^.className := "btn btn-default", ^.onClick --> B.click(),
+      (P.disabled || S.running) ?= (^.disabled := "disabled"),
       <.i(^.className := B.className, " " + B.text)
     )
 
