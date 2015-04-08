@@ -23,7 +23,7 @@ object ContainerPage {
 
   case class Backend(t: BackendScope[Props, State]) {
 
-    def willStart(): Unit = t.props.ref.client.map { client =>
+    def willMount(): Unit = t.props.ref.client.map { client =>
       val result = for {
         info <- client.containerInfo(t.props.containerId)
         top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
@@ -42,14 +42,16 @@ object ContainerPage {
 
     def stop() =
       t.props.ref.client.get.stopContainer(t.props.containerId).map { info =>
-        willStart()
+        refresh()
       }
 
     def start() =
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
         t.modState(s => s.copy(tabSelected = TabNone))
-        willStart()
+        refresh()
       }
+
+    def refresh() = willMount()
 
     def remove() =
       t.props.ref.client.get.removeContainer(t.props.containerId).map { info =>
@@ -91,7 +93,7 @@ object ContainerPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => vdom(P, S, B))
-    .componentWillMount(_.backend.willStart())
+    .componentWillMount(_.backend.willMount)
     .build
 
 

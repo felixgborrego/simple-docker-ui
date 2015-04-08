@@ -28,7 +28,7 @@ object PullModalDialogRender {
   val aria_valuenow = "aria-valuenow".reactAttr
   val aria_valuemin = "aria-valuemin".reactAttr
   val aria_valuemax = "aria-valuemax".reactAttr
-  val custom_style = "style".reactAttr
+
 
 
   def vdom(S: State, B: Backend) = {

@@ -24,7 +24,7 @@ object SettingsPage extends Page {
     def onChange(e: ReactEventI) =
       t.modState(_.copy(url = e.target.value))
 
-    def willStart(): Unit = {
+    def willMount(): Unit = {
       t.props.ref.connection match {
         case None =>
           ConfigStorage.getDefaultUrl().map { url =>
@@ -70,7 +70,7 @@ object SettingsPageRender {
     .backend(new Backend(_))
     .render((P, S, B) => {
     vdom(S, B)
-  }).componentWillMount(_.backend.willStart())
+  }).componentWillMount(_.backend.willMount)
     .build
 
 

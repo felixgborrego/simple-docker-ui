@@ -19,7 +19,7 @@ object ImagePage {
 
   case class Backend(t: BackendScope[Props, State]) {
 
-    def willStart(): Unit = t.props.ref.client.map { client =>
+    def willMount(): Unit = t.props.ref.client.map { client =>
       val result = for {
         info <- client.imageInfo(t.props.image.Id)
         history <- client.imageHistory(t.props.image.Id)
@@ -53,7 +53,7 @@ object ImagePageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => vdom(P, S, B))
-    .componentWillMount(_.backend.willStart())
+    .componentWillMount(_.backend.willMount)
     .build
 
 

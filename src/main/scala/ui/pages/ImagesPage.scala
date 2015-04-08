@@ -29,7 +29,7 @@ object ImagesPage extends Page {
   case class Props(ref: WorkbenchRef)
 
   case class Backend(t: BackendScope[Props, State]) {
-    def willStart(): Unit = t.props.ref.client.map { client =>
+    def willMount(): Unit = t.props.ref.client.map { client =>
       client.images().map { images =>
         t.modState(s => s.copy(localImages = images))
       }.onFailure {
@@ -100,7 +100,7 @@ object ImagesPageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => vdom(S, P, B))
-    .componentWillMount(_.backend.willStart())
+    .componentWillMount(_.backend.willMount)
     .build
 
 

@@ -21,7 +21,7 @@ case object HomePage extends Page {
   }
 
   case class Backend(t: BackendScope[Props, State]) {
-    def willStart(): Unit = t.props.ref.client.map { client =>
+    def willMount(): Unit = t.props.ref.client.map { client =>
       client.metadata().map { docker =>
         t.modState(s => State(Some(docker)))
       }.onFailure {
@@ -31,7 +31,7 @@ case object HomePage extends Page {
       }
     }
 
-    def refresh() = willStart()
+    def refresh() = willMount()
   }
 
   def component(ref: WorkbenchRef) = {
@@ -49,7 +49,7 @@ object HomePageRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => vdom(S, P, B))
-    .componentWillMount(_.backend.willStart())
+    .componentWillMount(_.backend.willMount)
     .build
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
