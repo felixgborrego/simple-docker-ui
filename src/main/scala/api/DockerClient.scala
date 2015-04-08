@@ -4,17 +4,18 @@ import model._
 import org.scalajs.dom.ext.Ajax
 import org.scalajs.dom.raw._
 import upickle._
+import util.CustomParser
+import util.CustomParser.{EventStatus, EventStream}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
-import scala.util.Try
 
 case class DockerClient(connection: Connection) {
 
   val HttpTimeOut = 10 * 1000
   // 10 seconds
-  val PingTimeOut = 2 * 1000
+  val PingTimeOut = 4 * 1000
 
   val DockerVersion = "v1.17"
   val url = connection.url + "/" + DockerVersion
@@ -123,24 +124,21 @@ case class DockerClient(connection: Connection) {
     new WebSocket(ws)
   }
 
-  def pullImage(term: String)(update: Seq[PullProgressEvent] => Unit): Future[Seq[PullProgressEvent]] = {
+  def pullImage(term: String)(update: Seq[EventStatus] => Unit): Future[Seq[EventStatus]] = {
     val Loading = 3
     val Done = 4
-    val p = Promise[Seq[PullProgressEvent]]
+    val p = Promise[Seq[EventStatus]]
     val xhr = new XMLHttpRequest()
 
-    // Using here a 'custom' streaming json parser
-    def parse(data: String): Seq[PullProgressEvent] = data.split( """{"status":""")
-      .map(element => """{"status":""" + element)
-      .map(text => Try(Some(read[PullProgressEvent](text))).getOrElse(None))
-      .flatten.toSeq
 
+
+    val currentStream = EventStream()
     xhr.onreadystatechange = { event: Event =>
-      log.info(s"[dockerClient.pullImage] onreadystatechange: " + xhr.readyState)
+      CustomParser.parse(currentStream, xhr.responseText)
       if (xhr.readyState == Loading) {
-        update(parse(xhr.responseText))
+        update(currentStream.events)
       } else if (xhr.readyState == Done) {
-        p.success(parse(xhr.responseText))
+        p.success(currentStream.events)
       }
     }
 

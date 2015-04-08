@@ -4,45 +4,20 @@ package ui.widgets
 import japgolly.scalajs.react.vdom.prefix_<^._
 import model._
 import ui.pages.ImagesPage._
-import util.stringUtils._
+import util.CustomParser.EventStatus
 
 object PullModalDialog {
-
-  case class Event(id: String, var progressValue: Int, var status: String, var progressText: String)
 
   case class ProgressState(remoteImageSelected: ImageSearch,
                            running: Boolean = false,
                            finished: Boolean = false,
-                           events: Seq[PullProgressEvent] = Seq.empty) {
-
+                           events: Seq[EventStatus] = Seq.empty) {
 
     val done = !running && events.nonEmpty
 
-    // transform events and grouping duplicates which are together
-    def progressEvents: Seq[Event] = events.foldLeft((Seq.empty[Event])) { case (eventsGrouped, rawEvent) =>
-      if (eventsGrouped.map(_.id).contains(rawEvent.id)) {
-        // reuse previous
-        val last = eventsGrouped.last
-        last.progressValue = progressValue(rawEvent)
-        last.progressText = progressText(rawEvent)
-        last.status = rawEvent.status
-        eventsGrouped
-      } else {
-        eventsGrouped :+ Event(rawEvent.id, progressValue(rawEvent), rawEvent.status, progressText(rawEvent))
-      }
-    }.reverse
-
     def description = remoteImageSelected.description
 
-    def progressValue(event: PullProgressEvent): Int = {
-      if (event.progressDetail.total == 0) 0
-      else ((event.progressDetail.current.toDouble / event.progressDetail.total.toDouble) * 100).toInt
-    }
-
-    def progressText(event: PullProgressEvent) =
-      substringAfter(event.progress, "]")
-
-    def message = events.lastOption.map(_.status)
+    def message = if (finished) events.headOption.map(_.status) else None
   }
 
 }
@@ -82,7 +57,7 @@ object PullModalDialogRender {
                   <.i(^.className := "list-group-item-text")("Description"),
                   <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", p.description)
                 ),
-                p.running ?= table(p.progressEvents)
+                p.running ?= table(p.events)
               )
             )
           },
@@ -100,7 +75,7 @@ object PullModalDialogRender {
     )
   }
 
-  def table(events: Seq[PullModalDialog.Event]) =
+  def table(events: Seq[EventStatus]) =
     <.div(
       <.br(),
       <.div(^.className := "panel panel-default  bootcards-summary",
