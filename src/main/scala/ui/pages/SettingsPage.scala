@@ -79,7 +79,7 @@ object SettingsPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left", "Connection"),
+          <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug")," Connection to Docker Remote Api"),
           <.div(^.className := "btn-group pull-right",
             <.button(^.className := "btn btn-success", ^.onClick --> B.save,
               <.i(^.className := "fa fa-check", "Save")
@@ -89,7 +89,7 @@ object SettingsPageRender {
         <.div(^.className := "modal-body",
           <.form(^.className := "form-horizontal",
             <.div(^.className := "form-group",
-              <.label(^.className := "col-xs-3 control-label", "Url", <.br(), <.small("to Docker Remote Api")),
+              <.label(^.className := "col-xs-3 control-label", "Url", <.br(), <.small()),
               <.div(^.className := "col-xs-9",
                 <.input(^.`type` := "text", ^.className := "form-control", ^.value := S.url, ^.onChange ==> B.onChange
                 )
@@ -103,9 +103,9 @@ object SettingsPageRender {
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
                 <.p(^.className := "list-group-item-text",
-                  "By default Boot2Docker runs docker with TLS enabled. It auto-generates certificates and copies them to ~/.boot2docker/certs. To allow Docker UI to connect to Docker Remote API, we need first to install those credentials.",
+                  "By default Boot2Docker runs Docker with TLS enabled. It auto-generates certificates and copies them to ~/.boot2docker/certs. To allow Docker UI to connect to Docker Remote API, first we need to install and allow Chrome to use those credentials.",
                   <.ul(
-                    <.li("First, you need to make Chrome trust in the auto-generated CA. Execute this command to add the new CA to your Certificate Trust Settings in your Keychain:", <.br(),
+                    <.li("First, to make Chrome trust in the auto-generated CA. Execute this command to add the new CA to your Certificate Trust Settings in your Keychain:", <.br(),
                       <.code("security add-trusted-cert -k ~/Library/Keychains/login.keychain  ~/.boot2docker/certs/boot2docker-vm/ca.pem")
                     ),
                     <.li("Also, you need to add the auto-generated certificate to your Keychain:", <.br(),
@@ -113,7 +113,8 @@ object SettingsPageRender {
                       <.code("security import ~/.boot2docker/certs/boot2docker-vm/cert.pem  -k ~/Library/Keychains/login.keychain")
                     ),
                     <.li("Figure out the boot2docker ip using ", <.code("boot2docker ip")),
-                    <.li("Try to reconnect! (you may need to restart Chrome)")
+                    <.li("Open your browser and verify you can connect to https://192.168.59.103:2376/_ping (this will ask for your certificate the first time)"),
+                    <.li("Try to reconnect!")
                   )
                 )
               )
@@ -132,9 +133,22 @@ object SettingsPageRender {
                       <.code("DOCKER_OPTS='-H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock'")
                     ),
                     <.li("Restart the Docker service using:", <.br(),
-                      <.code("sudo service docker restart")
+                      <.code("sudo service docker restart"),
+                      <.li("Open your browser and verify you can connect to http://localhost:4243/_ping")
                     )
                   )
+                )
+              )
+            )
+          ),
+          <.div(^.className := "panel panel-default",
+            <.div(^.className := "panel-heading",
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-windows"), " Windows config")
+            ),
+            <.div(^.className := "list-group",
+              <.div(^.className := "list-group-item",
+                <.p(^.className := "list-group-item-text",
+                  "No tested yet, but you should be able to connect by disabling the TLS."
                 )
               )
             )

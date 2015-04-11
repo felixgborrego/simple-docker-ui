@@ -216,6 +216,7 @@ package object model {
                                     AttachStderr: Boolean,
                                     Cmd: Seq[String],
                                     Image: String,
+                                    Tty:Boolean,
                                     HostConfig: HostConfig,
                                     ExposedPorts: Map[String, NetworkSettingsPort] = Map.empty[String, NetworkSettingsPort],
                                     name: String) {

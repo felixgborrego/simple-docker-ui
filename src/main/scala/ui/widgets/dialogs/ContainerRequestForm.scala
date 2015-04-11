@@ -118,6 +118,7 @@ object ContainerRequestForm {
       AttachStdin = true,
       AttachStdout = true,
       AttachStderr = true,
+      Tty = true,
       Cmd = initialConfig.Cmd,
       Image = props.imageName,
       HostConfig = HostConfig( PublishAllPorts = true,PortBindings = Map.empty),
