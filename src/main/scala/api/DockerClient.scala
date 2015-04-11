@@ -169,7 +169,6 @@ case class DockerClient(connection: Connection) {
       log.info("[dockerClient.events]")
       // the stream is an array but without [ ]
       val events = xhr.responseText.split("}").map(_ + "}")
-      println("1 " + events.length)
       read[Seq[DockerEvent]](events.mkString("[", ", ", "]")).reverse
     }
   }
