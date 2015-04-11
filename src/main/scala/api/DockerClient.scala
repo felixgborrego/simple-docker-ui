@@ -156,4 +156,21 @@ case class DockerClient(connection: Connection) {
       read[CreateContainerResponse](xhr.responseText)
     }
 
+  def events(): Future[Seq[DockerEvent]] = {
+    // pull 3 days
+    val since = {
+      val t = new js.Date()
+      t.setDate(t.getDate() - 3)
+      t.getTime() / 1000
+    }.toLong
+    val until = (js.Date.now() / 1000).toLong
+
+    Ajax.get(s"$url/events?since=$since&until=$until", timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.events]")
+      // the stream is an array but without [ ]
+      val events = xhr.responseText.split("}").map(_ + "}")
+      println("1 " + events.length)
+      read[Seq[DockerEvent]](events.mkString("[", ", ", "]")).reverse
+    }
+  }
 }
