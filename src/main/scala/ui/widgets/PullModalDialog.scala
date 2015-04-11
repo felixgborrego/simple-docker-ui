@@ -2,40 +2,91 @@ package ui.widgets
 
 
 import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
-import ui.pages.ImagesPage._
+import org.scalajs.dom
+import ui.WorkbenchRef
 import util.CustomParser.EventStatus
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object PullModalDialog {
 
-  case class ProgressState(remoteImageSelected: ImageSearch,
-                           running: Boolean = false,
+  trait ActionsBackend {
+    def imagePulled()
+  }
+
+  case class ProgressState(running: Boolean = false,
                            finished: Boolean = false,
                            events: Seq[EventStatus] = Seq.empty) {
 
-    val done = !running && events.nonEmpty
 
-    def description = remoteImageSelected.description
+    val done = !running && events.nonEmpty
 
     def message = if (finished) events.headOption.map(_.status) else None
   }
 
+
+  case class State(progress: ProgressState = ProgressState())
+
+  case class Props(actionsBackend: ActionsBackend, image: ImageSearch, ref: WorkbenchRef)
+
+  case class Backend(t: BackendScope[Props, State]) {
+
+    def didMount(): Unit = {
+      // The Dialog is not a react component
+      dom.document.getElementById("open-modal-dialog").asInstanceOf[dom.raw.HTMLButtonElement].click()
+    }
+
+    def willReceiveProps(newProps: Props): Unit = {
+      if (newProps.image.name != t.props.image.name) {
+        t.modState(s => s.copy(progress = s.progress.copy(events = Seq.empty, running = false, finished = false)))
+      }
+    }
+
+
+    def pullImage(): Unit = t.props.ref.client.map { client =>
+      client.pullImage(t.props.image.name) { updates =>
+        t.modState(s => s.copy(progress = s.progress.copy(events = updates, running = true)))
+      }.map { done =>
+        t.props.actionsBackend.imagePulled()
+        t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
+      }
+    }
+  }
+
+  def apply(actionsBackend: ActionsBackend, image: ImageSearch, ref: WorkbenchRef) = {
+    val props = Props(actionsBackend, image, ref)
+    PullModalDialogRender.component(props)
+  }
 }
 
+
 object PullModalDialogRender {
+  import PullModalDialog._
+
+  val component = ReactComponentB[Props]("PullModalDialog")
+    .initialState(State())
+    .backend(new Backend(_))
+    .render((P, S, B) => vdom(P, S, B))
+    .componentDidMount(_.backend.didMount)
+    .componentWillReceiveProps((scope, newProps) => scope.backend.willReceiveProps(newProps))
+    .build
+
 
   var data_dismiss = "data-dismiss".reactAttr
   val aria_valuenow = "aria-valuenow".reactAttr
   val aria_valuemin = "aria-valuemin".reactAttr
   val aria_valuemax = "aria-valuemax".reactAttr
 
+  val data_toggle = "data-toggle".reactAttr
+  val data_target = "data-target".reactAttr
 
 
-  def vdom(S: State, B: Backend) = {
-    val progress = S.progressState
-    val title = progress.map(_.remoteImageSelected.name).getOrElse("")
-    val finished = progress.map(_.finished).getOrElse(false)
-    val running = progress.map(_.running).getOrElse(false)
+  def vdom(P: Props, S: State, B: Backend) = {
+    val title = P.image.name
+    val finished = S.progress.finished
+    val running = S.progress.running
 
     <.div(^.className := "modal fade", ^.id := "editModal", ^.role := "dialog",
       <.div(^.className := "modal-dialog",
@@ -45,30 +96,28 @@ object PullModalDialogRender {
               (!running) ?= <.button(^.className := "btn btn-danger", data_dismiss := "modal", "Close")
             ),
             <.div(^.className := "btn-group pull-right",
+              <.button(^.id := "open-modal-dialog", ^.display := "none", data_toggle := "modal", data_target := "#editModal", "Open"),
               (!finished && !running) ?= <.button(^.className := "btn btn-primary", ^.onClick --> B.pullImage, "Pull Image")
             ),
             <.h3(^.className := "modal-title")(title)
           ),
-          progress.map { p =>
             <.div(^.className := "modal-body",
-              p.message.map(<.i(_)),
+              S.progress.message.map(<.i(_)),
               <.div(^.className := "list-group",
                 <.div(^.className := "list-group-item noborder",
                   <.i(^.className := "list-group-item-text")("Description"),
-                  <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", p.description)
+                  <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", P.image.description)
                 ),
-                p.running ?= table(p.events)
+                (running || finished) ?= table(S.progress.events)
               )
             )
-          },
+          ,
           <.div(^.className := "modal-footer",
-            progress.map { p => Seq(
-              p.remoteImageSelected.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
-              (p.remoteImageSelected.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-right")(p.remoteImageSelected.star_count),
-              (p.remoteImageSelected.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-right")(p.remoteImageSelected.star_count)
-            )
-            },
-            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"https://registry.hub.docker.com/search?q:=${progress.map(_.remoteImageSelected.name).getOrElse("")}&searchfield:=")("View in Docker.com")
+            P.image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
+            (P.image.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-right")(P.image.star_count),
+            (P.image.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-right")(P.image.star_count),
+            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"https://registry.hub.docker.com/search?q:=${P.image.name}&searchfield:=")("View in Docker.com")
+
           )
         )
       )

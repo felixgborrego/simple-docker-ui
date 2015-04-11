@@ -76,7 +76,7 @@ case class DockerClient(connection: Connection) {
     Ajax.get(s"$url/images/json", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
-    }
+    }.map(_.sortBy(-_.Created))
 
   def imageInfo(imageId: String): Future[ImageInfo] =
     Ajax.get(s"$url/images/$imageId/json", timeout = HttpTimeOut).map { xhr =>
@@ -163,7 +163,7 @@ case class DockerClient(connection: Connection) {
       t.setDate(t.getDate() - 3)
       t.getTime() / 1000
     }.toLong
-    val until = (js.Date.now() / 1000).toLong
+    val until = (js.Date.now()  / 1000).toLong - 1000 // (now - 1 seg)
 
     Ajax.get(s"$url/events?since=$since&until=$until", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.events]")

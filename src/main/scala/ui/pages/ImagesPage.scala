@@ -4,8 +4,8 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import ui.WorkbenchRef
-import ui.widgets.PullModalDialog.ProgressState
-import ui.widgets.{Alert, PullModalDialogRender,PullModalDialog}
+import ui.widgets.PullModalDialog.ActionsBackend
+import ui.widgets.{Alert, PullModalDialog}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +17,7 @@ object ImagesPage extends Page {
   case class State(localImages: Seq[Image] = Seq.empty,
                    remoteImages: Seq[ImageSearch] = Seq.empty,
                    searching: Boolean = false,
-                   progressState: Option[ProgressState] = None,
+                   imageToPull: Option[ImageSearch] = None,
                    error: Option[String] = None) {
     def searchIcon =
       if (searching)
@@ -28,7 +28,7 @@ object ImagesPage extends Page {
 
   case class Props(ref: WorkbenchRef)
 
-  case class Backend(t: BackendScope[Props, State]) {
+  case class Backend(t: BackendScope[Props, State]) extends ActionsBackend {
     def willMount(): Unit = t.props.ref.client.map { client =>
       client.images().map { images =>
         t.modState(s => s.copy(localImages = images))
@@ -59,30 +59,13 @@ object ImagesPage extends Page {
     }
 
     def showDetail(image: ImageSearch) = {
-      t.modState(s => s.copy(progressState = Some(ProgressState(remoteImageSelected = image))))
+      t.modState(s => s.copy(imageToPull = Some(image)))
     }
 
+    def refresh() = willMount()
 
-    def pullImage(): Unit = t.props.ref.client.map { client =>
-      t.state.progressState match {
-        case None =>
-        case Some(progress) =>
-          client.pullImage(progress.remoteImageSelected.name) { updates =>
-            t.modState(s => s.copy(progressState = Some(progress.copy(events = updates, running = true))))
-          }.map { done =>
-            log.info("Pull is done!")
-            client.images().map { images =>
-              log.info("Refresh ui!")
-              t.modState(s => s.copy(
-                localImages = images,
-                remoteImages = Seq.empty,
-                searching = false,
-                progressState = Some(progress.copy(events = done, running = false, finished = true))
-              ))
-            }
-          }
-      }
-    }
+    override def imagePulled(): Unit = refresh()
+
   }
 
   def component(ref: WorkbenchRef) = {
@@ -108,7 +91,7 @@ object ImagesPageRender {
     S.error.map(Alert(_)),
     remoteSearch(S, P, B),
     table("Local images", S.localImages, P),
-    PullModalDialogRender.vdom(S, B)
+    S.imageToPull.map(image => PullModalDialog(B, image, P.ref))
   )
 
   def table(title: String, images: Seq[Image], P: Props) =

@@ -5,7 +5,7 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model._
 import ui.WorkbenchRef
 import ui.widgets._
-import ui.widgets.forms.ContainerRequestForm
+import ui.widgets.dialogs.ContainerRequestForm
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global

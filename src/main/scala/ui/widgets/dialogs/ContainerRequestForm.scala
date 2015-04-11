@@ -1,4 +1,4 @@
-package ui.widgets.forms
+package ui.widgets.dialogs
 
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
@@ -114,7 +114,6 @@ object ContainerRequestForm {
   def apply(actionsBackend: ActionsBackend, image: Image, initialConfig: ContainerConfig, ref: WorkbenchRef) = {
     val props = Props(actionsBackend, image, initialConfig, ref)
     val exports = initialConfig.ExposedPorts
-    println("exports: " + exports)
     val request = CreateContainerRequest(
       AttachStdin = true,
       AttachStdout = true,
@@ -132,7 +131,7 @@ object ContainerRequestForm {
 
 object ContainerRequestFormRender {
 
-  import ui.widgets.forms.ContainerRequestForm._
+  import ui.widgets.dialogs.ContainerRequestForm._
 
   def component(initialState: State) = ReactComponentB[Props]("ContainerConfigForm")
     .initialState(initialState)
@@ -155,7 +154,7 @@ object ContainerRequestFormRender {
               <.button(^.className := "btn btn-danger", data_dismiss := "modal", "Cancel")
             ),
             <.div(^.className := "btn-group pull-right",
-              <.button(^.id := "open-modal-dialog", ^.className := "btn btn-primary", ^.display := "none",
+              <.button(^.id := "open-modal-dialog", ^.display := "none",
                 data_toggle := "modal", data_target := "#editModal", "Open"),
               <.button(^.className := "btn btn-success", ^.onClick --> B.run, <.span(^.className := "glyphicon glyphicon-play"), "Run")
             ),
