@@ -108,8 +108,9 @@ package object model {
     // Workaround, Docker may return null
     val cmd = Option(Cmd).getOrElse(Seq.empty)
     val env = Option(Env).getOrElse(Seq.empty)
+    val exposedPorts = Option(ExposedPorts).getOrElse(Map.empty)
 
-    val portBindings = ExposedPorts.map { case (containerPort, hostInfo) => (containerPort, Seq(hostInfo)) }
+    val portBindings = exposedPorts.map { case (containerPort, hostInfo) => (containerPort, Seq(hostInfo)) }
   }
 
   case class Port(Type: String,

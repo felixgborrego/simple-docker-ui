@@ -94,7 +94,7 @@ object ImagePageRender {
       "WorkingDir" -> imageInfo.Config.WorkingDir
     )
     val extraInfo = Map(
-      "Contaner exposed ports" -> imageInfo.Config.ExposedPorts.keySet.mkString(", "),
+      "Contaner exposed ports" -> imageInfo.Config.exposedPorts.keySet.mkString(", "),
       "Author" -> imageInfo.Author,
       "Os" -> imageInfo.Os,
       "Created" -> P.image.created
