@@ -10,6 +10,7 @@ import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+import scala.scalajs.js
 
 case class DockerClient(connection: Connection) {
 
@@ -44,7 +45,7 @@ case class DockerClient(connection: Connection) {
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-a-container
   def containerInfo(containerId: String): Future[ContainerInfo] =
     Ajax.get(s"$url/containers/$containerId/json", timeout = HttpTimeOut).map { xhr =>
-      log.debug("[dockerClient.containerInfo] return: " + xhr.responseText)
+      log.debug("[dockerClient.containerInfo]")
       read[ContainerInfo](xhr.responseText)
     }
 
@@ -98,7 +99,7 @@ case class DockerClient(connection: Connection) {
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
   private def containers(all: Boolean): Future[Seq[Container]] =
     Ajax.get(s"$url/containers/json?all=$all", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.containers] return: " + xhr.responseText)
+      log.info("[dockerClient.containers]")
       read[Seq[Container]](xhr.responseText)
     }
 
@@ -130,8 +131,6 @@ case class DockerClient(connection: Connection) {
     val p = Promise[Seq[EventStatus]]
     val xhr = new XMLHttpRequest()
 
-
-
     val currentStream = EventStream()
     xhr.onreadystatechange = { event: Event =>
       CustomParser.parse(currentStream, xhr.responseText)
@@ -147,5 +146,14 @@ case class DockerClient(connection: Connection) {
     xhr.send()
     p.future
   }
+
+  def createContainer(name: String, request: CreateContainerRequest): Future[CreateContainerResponse] =
+    Ajax.post(s"$url/containers/create?name=$name",
+      write(request),
+      headers = Map("Content-Type" -> "application/json"),
+      timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.version] return: " + xhr.responseText)
+      read[CreateContainerResponse](xhr.responseText)
+    }
 
 }

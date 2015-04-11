@@ -5,19 +5,22 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model._
 import ui.WorkbenchRef
 import ui.widgets._
+import ui.widgets.forms.ContainerRequestForm
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object ImagePage {
 
   case class State(info: Option[ImageInfo] = None,
                    history: Seq[ImageHistory] = Seq.empty,
-                   error: Option[String] = None)
+                   error: Option[String] = None,
+                   showCreateDialog: Boolean = false)
 
   case class Props(ref: WorkbenchRef, image: Image)
 
-  case class Backend(t: BackendScope[Props, State]) {
+  case class Backend(t: BackendScope[Props, State]) extends ContainerRequestForm.ActionsBackend {
 
     def willMount(): Unit = t.props.ref.client.map { client =>
       val result = for {
@@ -30,7 +33,20 @@ object ImagePage {
           log.error("ImagePage", s"Unable to get imageInfo for ${t.props.image.id}", ex)
           t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
+    }
 
+    def showCreateDialog(): Future[Unit] = Future {
+      t.modState(_.copy(showCreateDialog = true))
+    }
+
+    def containerConfig: ContainerConfig = t.state.info match {
+      case Some(info) => info.Config
+      case None => ContainerConfig()
+    }
+
+    override def newContainerCreated(containerId: String) = {
+      log.info(s"Container created ${containerId}")
+      t.props.ref.show(ContainerPage(containerId, t.props.ref))
     }
   }
 
@@ -66,9 +82,10 @@ object ImagePageRender {
 
   def vdomInfo(imageInfo: ImageInfo, S: State, P: Props, B: Backend) = {
     import util.stringUtils._
+    val imageName = substringBefore(P.image.RepoTags.headOption.getOrElse(""), ":")
     val generalInfo = Map(
       "Id" -> P.image.id,
-      "Name" -> substringBefore(P.image.RepoTags.headOption.getOrElse(""), ":"),
+      "Name" -> imageName,
       "Tags" -> P.image.RepoTags.map(substringAfter(_, ":")).mkString(", ")
     )
     val executionInfo = Map(
@@ -77,18 +94,30 @@ object ImagePageRender {
       "WorkingDir" -> imageInfo.Config.WorkingDir
     )
     val extraInfo = Map(
+      "Contaner exposed ports" -> imageInfo.Config.ExposedPorts.keySet.mkString(", "),
       "Author" -> imageInfo.Author,
       "Os" -> imageInfo.Os,
       "Created" -> P.image.created
     )
 
     <.div(
-      InfoCard(generalInfo, InfoCard.SMALL, None),
+      InfoCard(generalInfo, InfoCard.SMALL, None, Seq.empty, vdomCommands(S, B)),
       InfoCard(executionInfo),
       InfoCard(extraInfo),
-      vdomHistory(S.history)
+      vdomHistory(S.history),
+      S.showCreateDialog ?= ContainerRequestForm(B, P.image, B.containerConfig, P.ref)
     )
   }
+
+  def vdomCommands(state: State, B: Backend) =
+    Some(<.div(^.className := "panel-footer",
+      <.div(^.className := "btn-group btn-group-justified",
+        <.div(^.className := "btn-group",
+          Button("Star", "glyphicon-play")(B.showCreateDialog)
+        )
+      )
+    ))
+
 
   def vdomHistory(history: Seq[ImageHistory]): ReactElement = {
     val values = history.map(row => Map("Created" -> row.created, "Id" -> row.id, "Size" -> row.size, "Created By" -> row.CreatedBy))

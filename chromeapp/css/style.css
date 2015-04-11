@@ -102,3 +102,9 @@ div {
 .noborder {
     border: 0px;
 }
+
+code {
+  font-size: smaller;
+  color: black;
+  background-color: whitesmoke;
+}
