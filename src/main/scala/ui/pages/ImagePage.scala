@@ -45,7 +45,7 @@ object ImagePage {
     }
 
     override def newContainerCreated(containerId: String) = {
-      log.info(s"Container created ${containerId}")
+      log.info(s"Container created $containerId")
       t.props.ref.show(ContainerPage(containerId, t.props.ref))
     }
   }
@@ -81,7 +81,7 @@ object ImagePageRender {
 
 
   def vdomInfo(imageInfo: ImageInfo, S: State, P: Props, B: Backend) = {
-    import util.stringUtils._
+    import util.StringUtils._
     val imageName = substringBefore(P.image.RepoTags.headOption.getOrElse(""), ":")
     val generalInfo = Map(
       "Id" -> P.image.id,

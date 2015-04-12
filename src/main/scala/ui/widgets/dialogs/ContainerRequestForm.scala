@@ -6,7 +6,7 @@ import model._
 import org.scalajs.dom
 import ui.WorkbenchRef
 import util.logger._
-import util.stringUtils._
+import util.StringUtils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

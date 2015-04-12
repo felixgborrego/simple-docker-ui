@@ -1,6 +1,6 @@
 package util
 
-object stringUtils {
+object StringUtils {
 
   def substringAfter(s: String, k: String) = {
     s.indexOf(k) match {

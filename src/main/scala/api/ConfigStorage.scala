@@ -1,8 +1,9 @@
 package api
 
 import model.Connection
-import util.logger._
 import util.chrome.api._
+import util.logger._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
@@ -16,7 +17,7 @@ object ConfigStorage {
 
   def saveConnection(url: String) = save(ParamUrlConnection, url)
 
-  def getUrlConnection(): Future[Option[Connection]] = get(ParamUrlConnection)
+  def getUrlConnection: Future[Option[Connection]] = get(ParamUrlConnection)
     .map(url => Some(Connection(url)))
     .recover { case _ => None }
 
@@ -44,7 +45,7 @@ object ConfigStorage {
     p.future
   }
 
-  def getDefaultUrl(): Future[String] = getOs().map {
+  def getDefaultUrl: Future[String] = getOs().map {
     case "mac" => DefaultMacUrl
     case "win" => ""
     case "linux" | "openbsd" => DefaultLinuxUrl
@@ -52,7 +53,7 @@ object ConfigStorage {
   }
 
 
-  private def getOs(): Future[String] = {
+  private def getOs: Future[String] = {
     val p = Promise[String]()
     chrome.runtime.getPlatformInfo { info: PlatformInfo =>
       p.success(info.os)

@@ -22,10 +22,6 @@ Any feedback is more than welcome!
 
 [Video Example](https://youtu.be/x6RVTHp5M7w)
 
-### Get Started
-
-This app uses Docker Remote Api, so you'll need to enable the Docker Remote Api to allow http or https connections. 
-
 ### Stack
 
 *  [Scala.js](http://www.scala-js.org/)

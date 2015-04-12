@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 object TableCard {
 
   case class Props(data: Seq[Map[String, String]]) {
-    lazy val keys = data.headOption.map(_.keys.toSeq) getOrElse (Seq.empty)
+    lazy val keys = data.headOption.map(_.keys.toSeq).getOrElse(Seq.empty)
   }
 
   def apply(data: Seq[Map[String, String]]) = {

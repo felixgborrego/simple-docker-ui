@@ -1,5 +1,5 @@
 import util.momentJs.Moment
-import util.stringUtils._
+import util.StringUtils._
 
 /**
  * This models match with the Json coming from the Docker Remote API.
@@ -8,7 +8,7 @@ import util.stringUtils._
 package object model {
 
   case class Connection(url: String) {
-    import util.stringUtils._
+    import util.StringUtils._
     def ip = substringBefore(substringAfter(url, "://"), ":")
   }
 

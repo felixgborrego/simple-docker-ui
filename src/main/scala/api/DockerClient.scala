@@ -118,7 +118,7 @@ case class DockerClient(connection: Connection) {
     }
 
   def attachToContainer(containerId: String): WebSocket = {
-    import util.stringUtils._
+    import util.StringUtils._
     val schema = if (connection.url.startsWith("http://")) "ws://" else "wss://"
     val ws = schema + substringAfter(s"$url/containers/$containerId/attach/ws?logs=1&stderr=1&stdout=1&stream=1&stdin=1", "://")
     log.info(s"[dockerClient.attach] url: $ws")
@@ -141,7 +141,7 @@ case class DockerClient(connection: Connection) {
       }
     }
 
-    xhr.open("POST", s"$url/images/create?fromImage=$term", true)
+    xhr.open("POST", s"$url/images/create?fromImage=$term", async = true)
     log.info(s"[dockerClient.pullImage] start")
     xhr.send()
     p.future

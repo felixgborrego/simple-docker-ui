@@ -26,26 +26,25 @@ object Workbench {
       Workbench.State(Some(page), s.connection)
     }
 
-    def componentWillMount() = connectSaveConnection()
+    def componentWillMount() = connectSavedConnection()
 
-
-    def connectSaveConnection(): Unit = ConfigStorage.getUrlConnection().map { connection =>
+    def connectSavedConnection(): Unit = ConfigStorage.getUrlConnection().map { connection =>
       t.modState(_.copy(connection = connection))
       connection match {
-        case Some(url) => {
+        case Some(url) =>
           sendEvent("ConnectedWitSavedConnection")
           show(HomePage)
-        }
         case None => tryDefaultConnection()
       }
     }
 
     def tryDefaultConnection() = {
+      sendEvent("tryingDefaultConnection")
       val test = for {
         client <- ConfigStorage.getDefaultUrl().map(Connection).map(DockerClient)
         _ <- client.ping().map(_ => sendEvent("ConnectedWithDefaultConnection"))
         _ <- ConfigStorage.saveConnection(client.connection.url)
-      } yield connectSaveConnection()
+      } yield connectSavedConnection()
 
       test.onFailure { case _ => show(SettingsPage) }
 

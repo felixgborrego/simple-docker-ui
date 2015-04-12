@@ -171,7 +171,7 @@ object ContainerPageRender {
                 Button("Star", "glyphicon-play")(B.start)
           }),
         <.div(^.className := "btn-group",
-          if (state.info.map(_.State.Running).getOrElse(false))
+          if (state.info.exists(_.State.Running))
             Button("Remove", "glyphicon-trash",disabled=true)(B.remove)
           else
             Button("Remove", "glyphicon-trash")(B.remove)
@@ -181,7 +181,7 @@ object ContainerPageRender {
 
 
   def vDomTabs(S: State, B: Backend) = {
-    val stdin = S.info.map(info => info.Config.AttachStdin && info.State.Running).getOrElse(false)
+    val stdin = S.info.exists(info => info.Config.AttachStdin && info.State.Running)
 
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",

@@ -2,13 +2,13 @@ package util
 
 import model.PullProgressEvent
 import upickle._
-import util.stringUtils._
+import util.StringUtils._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 /**
- * Custom parser to process a partial http response for onreadystatechange Loadding.
+ * Custom parser to process a partial http response for onreadystatechange = Loadding.
  * Note: Using this for performance. The functional impl was too slow and can't afford to parse the http every time.
  */
 object CustomParser {
