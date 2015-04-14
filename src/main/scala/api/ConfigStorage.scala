@@ -17,11 +17,11 @@ object ConfigStorage {
 
   def saveConnection(url: String) = save(ParamUrlConnection, url)
 
-  def getUrlConnection: Future[Option[Connection]] = get(ParamUrlConnection)
+  def urlConnection: Future[Option[Connection]] = get(ParamUrlConnection)
     .map(url => Some(Connection(url)))
     .recover { case _ => None }
 
-  def save(key: String, value: String): Future[Unit] = {
+  private def save(key: String, value: String): Future[Unit] = {
     log.info(s"Saving $key = $value")
     val p = Promise[Unit]()
     val jsObject = scalajs.js.Dynamic.literal(key -> value)
@@ -32,7 +32,7 @@ object ConfigStorage {
     p.future
   }
 
-  def get(key: String): Future[String] = {
+  private def get(key: String): Future[String] = {
     val p = Promise[String]()
     chrome.storage.local.get(key, { result: js.Dynamic =>
       val value = result.selectDynamic(key).toString
@@ -45,7 +45,7 @@ object ConfigStorage {
     p.future
   }
 
-  def getDefaultUrl: Future[String] = getOs().map {
+  def defaultUrl: Future[String] = os.map {
     case "mac" => DefaultMacUrl
     case "win" => ""
     case "linux" | "openbsd" => DefaultLinuxUrl
@@ -53,7 +53,7 @@ object ConfigStorage {
   }
 
 
-  private def getOs: Future[String] = {
+  private def os: Future[String] = {
     val p = Promise[String]()
     chrome.runtime.getPlatformInfo { info: PlatformInfo =>
       p.success(info.os)

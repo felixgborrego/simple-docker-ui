@@ -28,7 +28,7 @@ object Workbench {
 
     def componentWillMount() = connectSavedConnection()
 
-    def connectSavedConnection(): Unit = ConfigStorage.getUrlConnection().map { connection =>
+    def connectSavedConnection(): Unit = ConfigStorage.urlConnection.map { connection =>
       t.modState(_.copy(connection = connection))
       connection match {
         case Some(url) =>
@@ -41,7 +41,7 @@ object Workbench {
     def tryDefaultConnection() = {
       sendEvent("tryingDefaultConnection")
       val test = for {
-        client <- ConfigStorage.getDefaultUrl().map(Connection).map(DockerClient)
+        client <- ConfigStorage.defaultUrl.map(Connection).map(DockerClient)
         _ <- client.ping().map(_ => sendEvent("ConnectedWithDefaultConnection"))
         _ <- ConfigStorage.saveConnection(client.connection.url)
       } yield connectSavedConnection()
@@ -51,7 +51,7 @@ object Workbench {
     }
 
     def reconnect(): Unit =
-      ConfigStorage.getUrlConnection().map { connection =>
+      ConfigStorage.urlConnection.map { connection =>
         log.info(s"workbench reconnected to $connection")
         t.modState(s => s.copy(connection = connection))
       }

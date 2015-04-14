@@ -27,7 +27,7 @@ object SettingsPage extends Page {
     def willMount(): Unit = {
       t.props.ref.connection match {
         case None =>
-          ConfigStorage.getDefaultUrl().map { url =>
+          ConfigStorage.defaultUrl.map { url =>
             t.modState(_.copy(url = url, Some("There is no connection configuration")))
           }
         case Some(c) => t.modState(s => s.copy(c.url, None))
