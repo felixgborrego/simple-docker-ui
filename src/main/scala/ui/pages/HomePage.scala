@@ -1,12 +1,14 @@
 package ui.pages
 
+import api.ConfigStorage
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
 import ui.WorkbenchRef
 import ui.widgets.{Alert, ContainersCard, InfoCard, TableCard}
-import util.logger._
 import util.chrome.api._
+import util.logger._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -32,7 +34,12 @@ case object HomePage extends Page {
       task.onFailure {
         case ex: Exception =>
           log.error("HomePage", "Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some(s"Unable to connect to ${t.props.url}")))
+          ConfigStorage.isRunningBoot2Docker.map {
+            case false => s"Unable to connect to ${t.props.url}, is Docker daemon running?"
+            case true => s"Unable to connect to ${t.props.url}, is boot2docker running?"
+          }.map { msg =>
+            t.modState(s => s.copy(error = Some(msg)))
+          }
       }
     }
 

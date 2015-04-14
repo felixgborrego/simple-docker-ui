@@ -52,6 +52,10 @@ object ConfigStorage {
     case _ => DefaultWinUrl
   }
 
+  def isRunningBoot2Docker:Future[Boolean] =  os.map {
+    case "mac" | "win" => true
+    case _ => false
+  }
 
   private def os: Future[String] = {
     val p = Promise[String]()
