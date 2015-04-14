@@ -24,6 +24,8 @@ object api extends js.GlobalScope {
 
   trait Runtime extends js.Object {
     def getPlatformInfo(callback: js.Function1[PlatformInfo, Any]): Unit = js.native
+
+    def getManifest(): Manifest = js.native
   }
 
 
@@ -35,5 +37,8 @@ object api extends js.GlobalScope {
     def nacl_arch: String = js.native
   }
 
+  trait Manifest extends js.Object {
+    def version: String = js.native
+  }
 
 }

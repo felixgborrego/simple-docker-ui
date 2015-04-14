@@ -6,7 +6,7 @@ import model._
 import ui.WorkbenchRef
 import ui.widgets.{Alert, ContainersCard, InfoCard, TableCard}
 import util.logger._
-
+import util.chrome.api._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -66,7 +66,8 @@ object HomePageRender {
   def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef, B: Backend) = {
     val info = Map(
       "Connected to" -> docker.connection.url,
-      "Version" -> s"${docker.version.Version} (api: ${docker.version.ApiVersion})"
+      "Version" -> s"${docker.version.Version} (api: ${docker.version.ApiVersion})",
+      "Docker UI" -> chrome.runtime.getManifest().version
     )
     <.div(
       ContainersCard(docker, ref)(() => B.refresh()),
