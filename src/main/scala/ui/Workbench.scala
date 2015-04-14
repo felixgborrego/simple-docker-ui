@@ -32,17 +32,17 @@ object Workbench {
       t.modState(_.copy(connection = connection))
       connection match {
         case Some(url) =>
-          sendEvent("ConnectedWitSavedConnection")
+          sendEvent(EventCategory.Connection, EventAction.Connected, "SavedConnection")
           show(HomePage)
         case None => tryDefaultConnection()
       }
     }
 
     def tryDefaultConnection() = {
-      sendEvent("tryingDefaultConnection")
+      sendEvent(EventCategory.Connection, EventAction.Try, "Default")
       val test = for {
         client <- ConfigStorage.defaultUrl.map(Connection).map(DockerClient)
-        _ <- client.ping().map(_ => sendEvent("ConnectedWithDefaultConnection"))
+        _ <- client.ping().map(_ => sendEvent(EventCategory.Connection, EventAction.Connected, "WithDefaultConnection"))
         _ <- ConfigStorage.saveConnection(client.connection.url)
       } yield connectSavedConnection()
 

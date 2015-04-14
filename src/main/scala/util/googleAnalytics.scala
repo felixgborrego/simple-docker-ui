@@ -12,7 +12,7 @@ object googleAnalytics {
 
   def sendAppView(name: String) = tracker.sendAppView(name)
 
-  def sendEvent(events: String*) = tracker.sendEvent(events)
+  def sendEvent(category: String, action: String, label: String) = tracker.sendEvent(category, action, label)
 
   object interface extends js.GlobalScope {
 
@@ -29,9 +29,21 @@ object googleAnalytics {
     trait Tracker extends js.Object {
       def sendAppView(name: String): Unit = js.native
 
-      def sendEvent(events: Seq[String]): Unit = js.native
+      def sendEvent(category: String, action: String, label: String): Unit = js.native
     }
 
+  }
+
+  object EventCategory{
+    val Connection = "Connection"
+    val Save = "Save"
+  }
+
+  object EventAction {
+    val Saved = "Saved"
+    val Connected = "Connected"
+    val Unable = "Unable"
+    val Try = "Try"
   }
 
 }

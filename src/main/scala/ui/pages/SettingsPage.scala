@@ -39,7 +39,7 @@ object SettingsPage extends Page {
       if (url.startsWith("http")) {
         DockerClient(Connection(url)).ping().onComplete {
           case Success(_) =>
-            sendEvent("SettingsSavedConnection")
+            sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
             t.modState(s => State(url, None))
             ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
           case Failure(e) =>
@@ -47,7 +47,7 @@ object SettingsPage extends Page {
             t.modState(s => s.copy(url, Some(s"Unable to connected to $url")))
         }
       } else {
-        sendEvent("SettingsUnableToConnect")
+        sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
         log.info("Invalid $url")
       }
     }
