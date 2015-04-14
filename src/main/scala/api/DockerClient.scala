@@ -11,6 +11,7 @@ import util.logger._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
+import scala.util.Try
 
 case class DockerClient(connection: Connection) {
 
@@ -157,19 +158,20 @@ case class DockerClient(connection: Connection) {
     }
 
   def events(): Future[Seq[DockerEvent]] = {
-    // pull 3 days
     val since = {
       val t = new js.Date()
-      t.setDate(t.getDate() - 3)
+      t.setDate(t.getDate() - 3) // pull 3 days
       t.getTime() / 1000
     }.toLong
-    val until = (js.Date.now()  / 1000).toLong - 1000 // (now - 1 seg)
-
-    Ajax.get(s"$url/events?since=$since&until=$until", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.events]")
-      // the stream is an array but without [ ]
-      val events = xhr.responseText.split("}").map(_ + "}")
-      read[Seq[DockerEvent]](events.mkString("[", ", ", "]")).reverse
+    val until = (js.Date.now() / 1000).toLong - 1 // (now - 1 seg)
+    val eventsUrl = s"$url/events?since=$since&until=$until"
+    Ajax.get(eventsUrl, timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.events] ")
+      Try {
+        val events = xhr.responseText.split("}").map(_ + "}") // FIXME should be \n (but didn't work)
+        val end = events.mkString("[", ", ", "]")
+        read[Seq[DockerEvent]](end).reverse
+      }.getOrElse(Seq.empty)
     }
   }
 }
