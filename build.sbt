@@ -11,6 +11,7 @@ lazy val root = project.in(file("."))
       "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.3"
     ),
+    artifactPath in (Compile, fullOptJS) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-opt.js",
     artifactPath in (Compile, fastOptJS) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-fastopt.js",
     artifactPath in (Compile, packageScalaJSLauncher) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-launcher.js"
   )
