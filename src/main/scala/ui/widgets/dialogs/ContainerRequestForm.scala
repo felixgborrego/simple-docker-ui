@@ -19,6 +19,7 @@ object ContainerRequestForm {
   case class State(request: CreateContainerRequest,
                    portsRadioOption: PortsRadioOptions = AllPorts,
                    warnings: Seq[String] = Seq.empty,
+                   cmdText: String = "",
                    message: Option[String] = None) {
 
   }
@@ -32,15 +33,18 @@ object ContainerRequestForm {
     def didMount(): Unit = {
       // The Dialog is not a react component
       dom.document.getElementById("open-modal-dialog").asInstanceOf[dom.raw.HTMLButtonElement].click()
+      t.modState(s => s.copy(cmdText = s.request.Cmd.mkString(" ")))
     }
 
 
     def updateName(e: ReactEventI) =
-      t.modState(s => s.copy(request = s.request.copy(name = e.target.value)))
+      t.modState(s => s.copy(request = s.request.copy(name = e.target.value.replaceAll("\\s", ""))))
 
 
-    def updateCmd(e: ReactEventI) = if (!e.target.value.endsWith(" ")) {
-      t.modState(s => s.copy(request = s.request.copy(Cmd = e.target.value.split("\\s"))))
+    def updateCmd(e: ReactEventI) = {
+      val cmd = e.target.value.split("\\s+").toSeq
+      println("'" + e.target.value + "--" + cmd + "'")
+      t.modState(s => s.copy(cmdText = e.target.value, request = s.request.copy(Cmd = cmd)))
     }
 
     def onStCheckBox(e: ReactEventI) =
@@ -186,7 +190,7 @@ object ContainerRequestFormRender {
                 <.label(^.className := "col-xs-3 control-label", "Command"),
                 <.div(^.className := "col-xs-9",
                   <.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "Command",
-                    ^.value := S.request.cmd.mkString(" "), ^.onChange ==> B.updateCmd)
+                    ^.value := S.cmdText, ^.onChange ==> B.updateCmd)
                 )
               ),
               <.div(^.className := "form-group",
