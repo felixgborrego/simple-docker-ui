@@ -228,10 +228,19 @@ package object model {
 
   case class CreateContainerResponse(Id: String, Warnings: Seq[String])
 
-  // {"status": "create", "id": "dfdf82bd3881","from": "ubuntu:latest", "time":1374067924}
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#monitor-dockers-events
   case class DockerEvent(status: String, id: String, from: String = "", time: Double) {
     def since = Moment(time*1000).fromNow()
     def shortId = subId(id)
   }
 
+  // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-changes-on-a-containers-filesystem
+  case class FileSystemChange(Path: String, Kind: Int) {
+    def kind = Kind match {
+      case 2 => "Delete"
+      case 1 => "Add"
+      case 0 => "Update"
+      case x => s"Unknown $x"
+    }
+  }
 }

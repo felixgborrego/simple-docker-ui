@@ -6,7 +6,7 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
 import org.scalajs.dom
 import ui.WorkbenchRef
-import util.CustomParser.EventStatus
+import util.PullEventsCustomParser.EventStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

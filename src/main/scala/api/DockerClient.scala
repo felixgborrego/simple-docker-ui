@@ -4,8 +4,9 @@ import model._
 import org.scalajs.dom.ext.Ajax
 import org.scalajs.dom.raw._
 import upickle._
-import util.CustomParser
-import util.CustomParser.{EventStatus, EventStream}
+import util.EventsCustomParser.DockerEventStream
+import util.{EventsCustomParser, PullEventsCustomParser}
+import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -134,7 +135,7 @@ case class DockerClient(connection: Connection) {
 
     val currentStream = EventStream()
     xhr.onreadystatechange = { event: Event =>
-      CustomParser.parse(currentStream, xhr.responseText)
+      PullEventsCustomParser.parse(currentStream, xhr.responseText)
       if (xhr.readyState == Loading) {
         update(currentStream.events)
       } else if (xhr.readyState == Done) {
@@ -157,21 +158,41 @@ case class DockerClient(connection: Connection) {
       read[CreateContainerResponse](xhr.responseText)
     }
 
-  def events(): Future[Seq[DockerEvent]] = {
+  def events(update: Seq[DockerEvent] => Unit): Future[Seq[DockerEvent]] = {
+    log.info("[dockerClient.events] start")
     val since = {
       val t = new js.Date()
       t.setDate(t.getDate() - 3) // pull 3 days
       t.getTime() / 1000
     }.toLong
-    val until = (js.Date.now() / 1000).toLong - 1 // (now - 1 seg)
-    val eventsUrl = s"$url/events?since=$since&until=$until"
-    Ajax.get(eventsUrl, timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.events] ")
-      Try {
-        val events = xhr.responseText.split("}").map(_ + "}") // FIXME should be \n (but didn't work)
-        val end = events.mkString("[", ", ", "]")
-        read[Seq[DockerEvent]](end).reverse
-      }.getOrElse(Seq.empty)
+
+    val Loading = 3
+    val Done = 4
+    val p = Promise[Seq[DockerEvent]]
+    val xhr = new XMLHttpRequest()
+
+    val currentStream = DockerEventStream()
+    xhr.onreadystatechange = { event: Event =>
+      EventsCustomParser.parse(currentStream, xhr.responseText)
+      if (xhr.readyState == Loading) {
+        update(currentStream.events)
+      } else if (xhr.readyState == Done) {
+        p.success(currentStream.events)
+      }
+    }
+
+    val eventsUrl = s"$url/events?since=$since"
+    xhr.open("GET",eventsUrl, async = true)
+    log.info(s"[dockerClient.events] start:  $eventsUrl")
+    xhr.send()
+    p.future
+  }
+
+
+  def containerChanges(containerId: String): Future[Seq[FileSystemChange]] = {
+    Ajax.get(s"$url/containers/$containerId/changes", timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.containerChanges]")
+      read[Seq[FileSystemChange]](xhr.responseText)
     }
   }
 }

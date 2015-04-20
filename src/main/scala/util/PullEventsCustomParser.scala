@@ -1,6 +1,6 @@
 package util
 
-import model.PullProgressEvent
+import model._
 import upickle._
 import util.StringUtils._
 
@@ -11,7 +11,7 @@ import scala.util.Try
  * Custom parser to process a partial http response for onreadystatechange = Loadding.
  * Note: Using this for performance. The functional impl was too slow and can't afford to parse the http every time.
  */
-object CustomParser {
+object PullEventsCustomParser {
 
   case class EventStream(var events: ArrayBuffer[EventStatus] = ArrayBuffer.empty, var indexLastInValid: Int = 0 )
 
@@ -28,7 +28,6 @@ object CustomParser {
         Some(read[PullProgressEvent](text))
       }.getOrElse {
         currentStream.indexLastInValid = currentStream.indexLastInValid + partialData.lastIndexOf(text)
-        println("indexLastInValid =" + currentStream.indexLastInValid)
         None
       }
     }.flatten.toSeq
@@ -41,14 +40,12 @@ object CustomParser {
     newEvents.foreach { rawEvent =>
       val index = currentStream.events.indexWhere(_.id == rawEvent.id)
       if (index != -1) {
-        // println("Updating value for  index=" + index)
-        // contains (using this as an optimization
+        // contains using this as an optimization
         val event = currentStream.events(index)
         event.progressValue = progressValue(rawEvent)
         event.progressText = progressText(rawEvent)
         event.status = rawEvent.status
       } else {
-        // println("Adding")
         currentStream.events.prepend(EventStatus(rawEvent.id, progressValue(rawEvent), rawEvent.status, progressText(rawEvent)))
       }
     }
@@ -62,4 +59,27 @@ object CustomParser {
 
   def progressText(event: PullProgressEvent) =
     substringAfter(event.progress, "]")
+}
+
+object EventsCustomParser {
+
+  case class DockerEventStream(var events: ArrayBuffer[DockerEvent] = ArrayBuffer.empty, var indexLastInValid: Int = 0)
+
+  // Using here a 'custom' DockerEventStream json parser Seq[PullProgressEvent]
+  def parse(currentStream: DockerEventStream, data: String): Unit = {
+    val partialData = data.substring(currentStream.indexLastInValid)
+    val newRawEvents = partialData.split( """\{"status":""")
+      .drop(1)
+      .map(element => """{"status":""" + element)
+      .map { text =>
+      Try {
+        Some(read[DockerEvent](text))
+      }.getOrElse {
+        currentStream.indexLastInValid = currentStream.indexLastInValid + partialData.lastIndexOf(text)
+        None
+      }
+    }.flatten.reverse.toSeq
+    currentStream.events.insertAll(0, newRawEvents.filterNot(e => currentStream.events.contains(e)))
+  }
+
 }

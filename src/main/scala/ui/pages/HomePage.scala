@@ -24,23 +24,30 @@ case object HomePage extends Page {
 
   case class Backend(t: BackendScope[Props, State]) {
     def willMount(): Unit = t.props.ref.client.map { client =>
-      val task = for {
-        info <- client.metadata()
-        events <- client.events()
-      } yield {
-          t.modState(s => s.copy(info = Some(info), events = events, error = None))
-      }
 
-      task.onFailure {
-        case ex: Exception =>
-          log.error("HomePage", "Unable to get Metadata", ex)
-          ConfigStorage.isRunningBoot2Docker.map {
-            case false => s"Unable to connect to ${t.props.url}, is Docker daemon running?"
-            case true => s"Unable to connect to ${t.props.url}, is boot2docker running?"
-          }.map { msg =>
-            t.modState(s => s.copy(error = Some(msg)))
-          }
-      }
+      def loadInfo() =
+        client.metadata().map { info =>
+          t.modState(s => s.copy(info = Some(info), error = None))
+        }.onFailure {
+          case ex: Exception =>
+            log.error("HomePage", "Unable to get Metadata", ex)
+            ConfigStorage.isRunningBoot2Docker.map {
+              case false => s"Unable to connect to ${t.props.url}, is Docker daemon running?"
+              case true => s"Unable to connect to ${t.props.url}, is Boot2docker running?"
+            }.map { msg =>
+              t.modState(s => s.copy(error = Some(msg)))
+            }
+        }
+
+      def loadEvents() =
+        client.events { events => //streaming
+          t.modState(s => s.copy(events = events))
+        }.map { events => // Done
+          t.modState(s => s.copy(events = events))
+        }
+
+      loadInfo()
+      loadEvents()
     }
 
     def refresh() = willMount()
