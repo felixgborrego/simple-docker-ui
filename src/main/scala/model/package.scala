@@ -1,5 +1,5 @@
-import util.momentJs.Moment
 import util.StringUtils._
+import util.momentJs.Moment
 
 /**
  * This models match with the Json coming from the Docker Remote API.
@@ -214,6 +214,7 @@ package object model {
   case class CreateContainerRequest(AttachStdin: Boolean,
                                     AttachStdout: Boolean,
                                     AttachStderr: Boolean,
+                                    OpenStdin: Boolean,
                                     Cmd: Seq[String],
                                     Image: String,
                                     Tty:Boolean,

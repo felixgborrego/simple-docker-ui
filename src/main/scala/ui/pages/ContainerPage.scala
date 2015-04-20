@@ -2,9 +2,10 @@ package ui.pages
 
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
-import model.{ContainerInfo, ContainerTop}
+import model.{ContainerInfo, ContainerTop, FileSystemChange}
 import org.scalajs.dom.raw.WebSocket
 import ui.WorkbenchRef
+import ui.widgets.TerminalCard.TerminalInfo
 import ui.widgets._
 import util.logger._
 
@@ -15,6 +16,7 @@ object ContainerPage {
 
   case class State(info: Option[ContainerInfo] = None,
                    top: Option[ContainerTop] = None,
+                   changes: Seq[FileSystemChange] = Seq.empty,
                    error: Option[String] = None,
                    actionStopping: Boolean = false,
                    tabSelected: ContainerPageTab = TabNone)
@@ -27,7 +29,9 @@ object ContainerPage {
       val result = for {
         info <- client.containerInfo(t.props.containerId)
         top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
-      } yield t.modState(s => s.copy(Some(info), top))
+        changes <- client.containerChanges(t.props.containerId)
+      } yield t.modState(s => s.copy(Some(info), top, changes))
+
 
       result.onFailure {
         case ex: Exception =>
@@ -169,7 +173,8 @@ object ContainerPageRender {
                 Button("Stop", "glyphicon-stop")(B.stop)
               else
                 Button("Star", "glyphicon-play")(B.start)
-          }),
+          }
+        ),
         <.div(^.className := "btn-group",
           if (state.info.exists(_.State.Running))
             Button("Remove", "glyphicon-trash",disabled=true)(B.remove)
@@ -181,21 +186,33 @@ object ContainerPageRender {
 
 
   def vDomTabs(S: State, B: Backend) = {
-    val stdin = S.info.exists(info => info.Config.AttachStdin && info.State.Running)
+    val terminalInfo = S.info.map { info =>
+      TerminalInfo(stdinOpened = info.Config.OpenStdin && info.State.Running,
+        stdinAttached = info.Config.AttachStdin,
+        stOutAttached = info.Config.AttachStdout
+      )
+    }.getOrElse(TerminalInfo(false, false, false))
 
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.ul(^.className := "nav nav-tabs",
           <.li(^.role := "presentation", (S.tabSelected == TabTerminal) ?= (^.className := "active"),
-            <.a(^.onClick --> B.showTab(TabTerminal), ^.className := "glyphicon glyphicon-console", " Terminal")
+            <.a(^.onClick --> B.showTab(TabTerminal), ^.className := "glyphicon glyphicon-console",
+              " Terminal ",
+              <.i(^.className := (if (terminalInfo.stdinOpened) "fa fa-chain" else "fa fa-chain-broken"))
+            )
           ),
           S.top.map(s =>
             <.li(^.role := "presentation", (S.tabSelected == TabTop) ?= (^.className := "active"),
               <.a(^.onClick --> B.showTab(TabTop), ^.className := "glyphicon glyphicon-transfer", " Top")
-            ))
+            )),
+          <.li(^.role := "presentation", (S.tabSelected == TabChanges) ?= (^.className := "active"),
+            <.a(^.onClick --> B.showTab(TabTop), <.i(^.className := "fa fa-history"), " File system changes")
+          )
         ),
-        (S.tabSelected == TabTerminal) ?= TerminalCard(stdin)(B.attach),
-        (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get
+        (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
+        (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
+        S.info.map(vdomChanges(S.changes, _))
       )
     )
   }
@@ -203,6 +220,13 @@ object ContainerPageRender {
   def vdomTop(top: ContainerTop): ReactElement = {
     val keys = top.Titles
     val values = top.Processes.map(data => keys.zip(data).toMap)
+    TableCard(values)
+  }
+
+  def vdomChanges(changes: Seq[FileSystemChange], containerInfo: ContainerInfo): ReactElement = if (changes.isEmpty) {
+    <.div(s"There is no changes since this container was created from '${containerInfo.image}'")
+  } else {
+    val values = changes.map(c => Map("Kind" -> c.kind, "Path" -> c.Path))
     TableCard(values)
   }
 
@@ -215,3 +239,5 @@ case object TabNone extends ContainerPageTab
 case object TabTerminal extends ContainerPageTab
 
 case object TabTop extends ContainerPageTab
+
+case object TabChanges extends ContainerPageTab

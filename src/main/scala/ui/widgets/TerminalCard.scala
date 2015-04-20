@@ -9,17 +9,28 @@ import util.termJs._
 
 object TerminalCard {
 
+  val GREEN = "\u001B[32m"
+  val RED = "\u001B[31m"
+  val LIGHT_GRAY = "\u001B[37m"
+  val RESET = "\u001B[0m"
+
+  def apply(info: TerminalInfo)(connectionFactory: () => WebSocket) = {
+    val props = Props(info, connectionFactory)
+    TerminalCardRender.component(props)
+  }
+
   case class State(title: String = "Terminal")
 
-  case class Props(stdinAttached: Boolean, connectionFactory: () => WebSocket)
+  case class TerminalInfo(stdinOpened: Boolean, stdinAttached: Boolean, stOutAttached: Boolean)
+
+  case class Props(info: TerminalInfo, connectionFactory: () => WebSocket)
 
   case class Backend(t: BackendScope[Props, State]) {
 
     lazy val ws = t.props.connectionFactory()
 
     def didMount(): Unit = {
-      log.info("Terminal: willStart")
-      val config = if(t.props.stdinAttached) util.termJs.DefaultWithOutStdin else util.termJs.DefaultWithOutStdin
+      val config = if (t.props.info.stdinOpened) util.termJs.DefaultWithStdin else util.termJs.DefaultWithOutStdin
       val terminal = new Terminal(config)
       val element = dom.document.getElementById("terminal")
       initTerminal(terminal, element)
@@ -29,8 +40,17 @@ object TerminalCard {
       }
 
       ws.onopen = (x: Event) => {
-        log.info("Connected")
-        terminal.write("\u001B[31m[Connected]\u001B[0m\r\n")
+        log.info(s"Connected")
+        val info = t.props.info
+        if (info.stdinOpened) {
+          terminal.write(s"${GREEN}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STDIN attached: ${info.stdinAttached}, STOUT attached:${info.stOutAttached}] $RESET\r\n")
+        } else {
+          terminal.write(s"${RED}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STOUT attached:${info.stOutAttached}] ]$RESET\r\n")
+          scalajs.js.timers.setTimeout(200) {
+            //remove focuse from the terminal
+            terminal.blur()
+          }
+        }
       }
       ws.onclose = (x: CloseEvent) => {
         log.info(x.toString)
@@ -41,13 +61,15 @@ object TerminalCard {
         terminal.write("\u001B[31m[Connection error: " + x.message + "]\u001B[0m")
       }
 
-
       terminal.on("data", (data: String) => {
-        if (!t.props.stdinAttached) {
-          terminal.write(data.toString.replace("\r", "\r\n"))
+        if (t.props.info.stdinOpened) {
+          if (!t.props.info.stdinAttached) {
+            terminal.write(data.toString.replace("\r", "\r\n"))
+          }
+          ws.send(data)
         }
-        ws.send(data)
       })
+
       terminal.on("title", (data: String) => t.modState(s => s.copy(title = data)))
 
       dom.window.addEventListener("resize", (e: dom.Event) => {
@@ -56,16 +78,10 @@ object TerminalCard {
       autoResize(terminal, element)
     }
 
-
     def willUnmount() = {
       log.info("Terminal willUnmount")
       ws.close(1000, "Disconnect ws")
     }
-  }
-
-  def apply(stdinAttached: Boolean)(connectionFactory: () => WebSocket) = {
-    val props = Props(stdinAttached, connectionFactory)
-    TerminalCardRender.component(props)
   }
 }
 
@@ -82,9 +98,7 @@ object TerminalCardRender {
     .build
 
   def vdom(S: State, props: Props) =
-    <.div(^.className := "terminal-col-fixed ",
+    <.div(^.id := "terminalPanel", ^.className := "terminal-col-fixed ",
       <.div(^.id := "terminal")
     )
-
-
 }

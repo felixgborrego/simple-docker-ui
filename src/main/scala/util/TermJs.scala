@@ -19,12 +19,14 @@ object termJs {
     def resize(cols: Int, rows: Int): Unit = js.native
 
     def on(event: String, f: js.Function1[String, _]): Unit = js.native
+
+    def blur(): Unit = js.native
   }
 
 
   def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = true, useStyle = true)
 
-  def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = false, useStyle = true)
+  def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = false, useStyle = false, cursorBlink = false)
 
   def initTerminal(terminal: Terminal, element: Element) = {
     terminal.open(element)

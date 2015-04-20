@@ -125,12 +125,13 @@ object ImagePageRender {
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left",
-            <.span(^.className := "glyphicon glyphicon-list"), " Creation History"
+            <.i(^.className := "fa fa-history"), " Creation History"
           )
         ),
         TableCard(values)
       )
     )
+
   }
 
 }
