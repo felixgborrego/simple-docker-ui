@@ -207,12 +207,12 @@ object ContainerPageRender {
               <.a(^.onClick --> B.showTab(TabTop), ^.className := "glyphicon glyphicon-transfer", " Top")
             )),
           <.li(^.role := "presentation", (S.tabSelected == TabChanges) ?= (^.className := "active"),
-            <.a(^.onClick --> B.showTab(TabTop), <.i(^.className := "fa fa-history"), " File system changes")
+            <.a(^.onClick --> B.showTab(TabChanges), <.i(^.className := "fa fa-history"), " File system changes")
           )
         ),
         (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
         (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
-        S.info.map(vdomChanges(S.changes, _))
+        (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
       )
     )
   }
@@ -224,7 +224,11 @@ object ContainerPageRender {
   }
 
   def vdomChanges(changes: Seq[FileSystemChange], containerInfo: ContainerInfo): ReactElement = if (changes.isEmpty) {
-    <.div(s"There is no changes since this container was created from '${containerInfo.image}'")
+    <.div(^.className := "panel",
+      <.div(^.className := s"alert",
+        s"There is no changes since this container was created from '${containerInfo.image}' (${containerInfo.Config.Image})"
+      )
+    )
   } else {
     val values = changes.map(c => Map("Kind" -> c.kind, "Path" -> c.Path))
     TableCard(values)
