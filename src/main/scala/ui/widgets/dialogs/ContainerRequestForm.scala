@@ -5,8 +5,8 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import org.scalajs.dom
 import ui.WorkbenchRef
-import util.logger._
 import util.StringUtils._
+import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -43,6 +43,10 @@ object ContainerRequestForm {
       t.modState(s => s.copy(request = s.request.copy(Cmd = e.target.value.split("\\s"))))
     }
 
+    def onStCheckBox(e: ReactEventI) =
+      t.modState(s => s.copy(request = s.request.copy(OpenStdin = !s.request.OpenStdin, Tty = !s.request.Tty)))
+
+    def stCheckBoxValue = t.state.request.OpenStdin && t.state.request.Tty
 
     def portsMapping(option: PortsRadioOptions): Unit = {
       val hostConfig = t.state.request.HostConfig
@@ -97,6 +101,8 @@ object ContainerRequestForm {
       val cmd = request.Cmd.mkString(" ")
       val imageName = t.props.imageName
       val nameCommand = if (request.name.isEmpty) "" else s" --name ${request.name}"
+      val paramI = if (request.OpenStdin) " -i" else ""
+      val paramT = if (request.Tty) " -t" else ""
       def ports = t.state.portsRadioOption match {
         case AllPorts => " -P"
         case NoPorts => ""
@@ -106,8 +112,7 @@ object ContainerRequestForm {
         }.filter(_._2.nonEmpty).map { case (internal, external) => s"-p $external:$internal" }
           .mkString(" ", " ", "")
       }
-
-      s"docker run$ports$nameCommand $imageName $cmd"
+      s"docker run$paramI$paramT$ports$nameCommand $imageName $cmd"
     }
   }
 
@@ -119,6 +124,7 @@ object ContainerRequestForm {
       AttachStdout = true,
       AttachStderr = true,
       Tty = true,
+      OpenStdin = true, // opens stdin
       Cmd = initialConfig.Cmd,
       Image = props.imageName,
       HostConfig = HostConfig( PublishAllPorts = true,PortBindings = Map.empty),
@@ -144,6 +150,8 @@ object ContainerRequestFormRender {
   val data_toggle = "data-toggle".reactAttr
   val data_target = "data-target".reactAttr
   var data_dismiss = "data-dismiss".reactAttr
+  var data_trigger = "data-trigger".reactAttr
+
 
   def vdom(P: Props, S: State, B: Backend) = {
 
@@ -189,7 +197,15 @@ object ContainerRequestFormRender {
                   <.label(^.onClick --> B.portsMapping(NoPorts), ^.className := "btn btn-primary", <.input(^.`type` := "radio", ^.className := "publicPorts", ^.name := "ports"), "None")
                 )
               ),
-              S.portsRadioOption == CustomPorts ?= table(S, B)
+              S.portsRadioOption == CustomPorts ?= table(S, B),
+              <.div(^.className := "form-group",
+                <.label(^.className := "col-xs-3 control-label", "stdin/stout"),
+                <.div(^.className := "col-xs-9",
+                  <.input(^.`type` := "checkbox", ^.checked := B.stCheckBoxValue, ^.onClick ==> B.onStCheckBox,
+                    <.span(" Keep STDIN open & Allocate a pseudo-TTY", <.br(), <.small("you can connect later in interactive mode."))
+                  )
+                )
+              )
             )
           ),
           <.div(^.className := "modal-footer",
