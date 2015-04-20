@@ -5,14 +5,13 @@ import org.scalajs.dom.ext.Ajax
 import org.scalajs.dom.raw._
 import upickle._
 import util.EventsCustomParser.DockerEventStream
-import util.{EventsCustomParser, PullEventsCustomParser}
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.logger._
+import util.{EventsCustomParser, PullEventsCustomParser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
-import scala.util.Try
 
 case class DockerClient(connection: Connection) {
 
@@ -78,7 +77,11 @@ case class DockerClient(connection: Connection) {
     Ajax.get(s"$url/images/json", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
-    }.map(_.sortBy(-_.Created))
+    }.map {
+      _.sortBy(-_.Created)
+        .filterNot(_.RepoTags.contains("<none>:<none>"))
+    }
+
 
   def imageInfo(imageId: String): Future[ImageInfo] =
     Ajax.get(s"$url/images/$imageId/json", timeout = HttpTimeOut).map { xhr =>
