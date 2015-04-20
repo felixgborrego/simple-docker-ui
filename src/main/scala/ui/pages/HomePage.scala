@@ -91,7 +91,7 @@ object HomePageRender {
 
   def vdomEvents(events: Seq[DockerEvent]) = {
     val values = events.map(e => Map("Status" -> e.status, "Id" -> e.shortId, "From" -> e.from, "Time" -> e.since))
-    <.div(^.className := "container  col-sm-12",
+    values.nonEmpty ?= <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left",
