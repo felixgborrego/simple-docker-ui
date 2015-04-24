@@ -42,19 +42,21 @@ object ContainersCardRender {
             <.div(^.className := "col-sm-4",
               P.ref.link(ContainersPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-equalizer"),
-                <.h4("All containers", <.span(^.className := "label label-info")(docker.info.Containers))
+                <.h4("All containers", <.span(^.className := "label label-info")(docker.info.Containers)),
+                <.i(docker.totalContainersSize)
               )
             ),
             <.div(^.className := "col-sm-4",
               P.ref.link(ImagesPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-cloud-download"),
-                <.h4("Images", <.span(^.className := "label label-info")(docker.info.Images))
+                <.h4("Images", <.span(^.className := "label label-info")(docker.images.size)),
+                <.i(docker.totalImagesSize)
               )
             )
           )
         ),
         <.div(^.className := "panel-footer",
-          <.small(<.strong(docker.info.Images), " images downloaded & ", <.strong(docker.info.Containers), " containers")
+          <.small(<.strong(docker.images.size), " images downloaded & ", <.strong(docker.info.Containers), " containers")
         )
       )
     )

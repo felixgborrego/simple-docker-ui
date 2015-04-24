@@ -7,6 +7,7 @@ import ui.WorkbenchRef
 import ui.widgets.PullModalDialog.ActionsBackend
 import ui.widgets.{Alert, PullModalDialog}
 import util.logger._
+import util.StringUtils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -24,6 +25,8 @@ object ImagesPage extends Page {
         "glyphicon glyphicon-refresh glyphicon-spin"
       else
         "glyphicon glyphicon-search"
+
+    def totalSize = bytesToSize(localImages.map(_.VirtualSize).sum)
   }
 
   case class Props(ref: WorkbenchRef)
@@ -90,15 +93,16 @@ object ImagesPageRender {
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_)),
     remoteSearch(S, P, B),
-    table("Local images", S.localImages, P),
+    table("Local images", S, P),
     S.imageToPull.map(image => PullModalDialog(B, image, P.ref))
   )
 
-  def table(title: String, images: Seq[Image], P: Props) =
+  def table(title: String, S:State, P: Props) =
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title)
+          <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title),
+          <.span(^.className := "panel-title pull-right", "Total: ", S.totalSize)
         ),
         <.table(^.className := "table table-hover table-striped",
           <.thead(
@@ -110,7 +114,7 @@ object ImagesPageRender {
             )
           ),
           <.tbody(
-            images.map { img =>
+            S.localImages.map { img =>
               <.tr(
                 <.td(P.ref.link(ImagePage(img, P.ref))(img.id)),
                 <.td(img.RepoTags.mkString(", ")),

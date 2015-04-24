@@ -15,7 +15,12 @@ package object model {
   case class DockerMetadata(connection: Connection,
                             info: Info,
                             version: Version,
-                            containers: Seq[Container])
+                            containers: Seq[Container],
+                            images: Seq[Image]) {
+
+    def totalImagesSize = bytesToSize(images.map(_.VirtualSize).sum)
+    def totalContainersSize = bytesToSize(containers.map(c=> c.SizeRootFs+ c.SizeRw).sum)
+  }
 
   case class Info(Containers: Int,
                   Debug: Int,
@@ -53,6 +58,8 @@ package object model {
                        Image: String,
                        Status: String,
                        Names: Seq[String],
+                       SizeRootFs: Int,
+                       SizeRw: Int,
                        Ports: Seq[Port]) {
     def id = subId(Id)
 
