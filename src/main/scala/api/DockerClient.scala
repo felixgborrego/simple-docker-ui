@@ -124,9 +124,14 @@ case class DockerClient(connection: Connection) {
       read[Info](xhr.responseText)
     }
 
+  def checkVersion(): Future[Boolean] = version().map(_.apiVersion).map {
+    case (mayor, _) if (mayor > Mayor) => true
+    case (mayor, minor) if (mayor == Mayor && minor >= Minor) => true
+    case x => false
+  }
 
   private def version(): Future[Version] =
-    Ajax.get(s"$url/version", timeout = HttpTimeOut).map { xhr =>
+    Ajax.get(s"${connection.url}/version", timeout = PingTimeOut).map { xhr =>
       log.info("[dockerClient.version] return: " + xhr.responseText)
       read[Version](xhr.responseText)
     }

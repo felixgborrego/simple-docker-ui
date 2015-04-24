@@ -43,6 +43,7 @@ object googleAnalytics {
     val Saved = "Saved"
     val Connected = "Connected"
     val Unable = "Unable"
+    val InvalidVersion = "InvalidVersion"
     val Try = "Try"
   }
 

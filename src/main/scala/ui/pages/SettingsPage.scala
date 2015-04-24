@@ -1,6 +1,6 @@
 package ui.pages
 
-import api.{ConfigStorage, DockerClient}
+import api.{ConfigStorage, DockerClient, DockerClientConfig}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
@@ -10,7 +10,6 @@ import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
 
 object SettingsPage extends Page {
 
@@ -37,12 +36,18 @@ object SettingsPage extends Page {
     def save(): Unit = {
       val url = t.state.url
       if (url.startsWith("http")) {
-        DockerClient(Connection(url)).ping().onComplete {
-          case Success(_) =>
+        DockerClient(Connection(url)).checkVersion().map {
+          case true =>
             sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
             t.modState(s => State(url, None))
             ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
-          case Failure(e) =>
+          case false =>
+            sendEvent(EventCategory.Connection, EventAction.InvalidVersion, "Settings")
+            t.modState(s => s.copy(url, Some(
+              s"""Docker UI requires a newer version.
+                 |Minimum Remote API supported is ${DockerClientConfig.DockerVersion}""".stripMargin)))
+        }.onFailure {
+          case ex: Exception =>
             log.info(s"Unable to connected to $url")
             t.modState(s => s.copy(url, Some(s"Unable to connected to $url")))
         }

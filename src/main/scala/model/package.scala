@@ -39,7 +39,12 @@ package object model {
                      GoVersion: String,
                      KernelVersion: String,
                      Os: String,
-                     Version: String)
+                     Version: String) {
+
+    def apiVersion: (Int, Int) = ApiVersion.split( """\.""").map(_.toInt) match {
+      case Array(mayor, minor, _*) => (mayor, minor)
+    }
+  }
 
 
   case class Container(Command: String,
