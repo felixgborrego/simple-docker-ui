@@ -1,5 +1,6 @@
 package api
 
+import api.DockerClientConfig.APIRequired._
 import model._
 import org.scalajs.dom.ext.Ajax
 import org.scalajs.dom.raw._
@@ -13,13 +14,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 
+object DockerClientConfig {
+  val HttpTimeOut = 10 * 1000
+  val PingTimeOut = 4 * 1000
+  val DockerVersion = s"v$Mayor.$Minor"
+
+  object APIRequired {
+    val Mayor = 1
+    val Minor = 17
+  }
+}
+
 case class DockerClient(connection: Connection) {
 
-  val HttpTimeOut = 10 * 1000
-  // 10 seconds
-  val PingTimeOut = 4 * 1000
+  import DockerClientConfig._
 
-  val DockerVersion = "v1.17"
   val url = connection.url + "/" + DockerVersion
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#ping-the-docker-server
