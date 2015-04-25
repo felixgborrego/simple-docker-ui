@@ -176,7 +176,7 @@ case class DockerClient(connection: Connection) {
       read[CreateContainerResponse](xhr.responseText)
     }
 
-  def events(update: Seq[DockerEvent] => Unit): Future[Seq[DockerEvent]] = {
+  def events(update: Seq[DockerEvent] => Unit): ConnectedStream = {
     log.info("[dockerClient.events] start")
     val since = {
       val t = new js.Date()
@@ -186,7 +186,6 @@ case class DockerClient(connection: Connection) {
 
     val Loading = 3
     val Done = 4
-    val p = Promise[Seq[DockerEvent]]
     val xhr = new XMLHttpRequest()
 
     val currentStream = DockerEventStream()
@@ -195,7 +194,7 @@ case class DockerClient(connection: Connection) {
       if (xhr.readyState == Loading) {
         update(currentStream.events)
       } else if (xhr.readyState == Done) {
-        p.success(currentStream.events)
+        update(currentStream.events)
       }
     }
 
@@ -203,9 +202,11 @@ case class DockerClient(connection: Connection) {
     xhr.open("GET",eventsUrl, async = true)
     log.info(s"[dockerClient.events] start:  $eventsUrl")
     xhr.send()
-    p.future
-  }
 
+    new ConnectedStream {
+      override def abort(): Unit = xhr.abort()
+    }
+  }
 
   def containerChanges(containerId: String): Future[Seq[FileSystemChange]] = {
     Ajax.get(s"$url/containers/$containerId/changes", timeout = HttpTimeOut).map { xhr =>
@@ -214,3 +215,8 @@ case class DockerClient(connection: Connection) {
     }
   }
 }
+
+trait ConnectedStream {
+  def abort()
+}
+

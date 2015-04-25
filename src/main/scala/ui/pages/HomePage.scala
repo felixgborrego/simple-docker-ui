@@ -1,6 +1,6 @@
 package ui.pages
 
-import api.ConfigStorage
+import api.{ConfigStorage, ConnectedStream}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
@@ -16,7 +16,7 @@ case object HomePage extends Page {
 
   val id = "HomePage"
 
-  case class State(info: Option[DockerMetadata] = None, events: Seq[DockerEvent] = Seq.empty, error: Option[String] = None)
+  case class State(info: Option[DockerMetadata] = None, events: Seq[DockerEvent] = Seq.empty, error: Option[String] = None, stream: Option[ConnectedStream] = None)
 
   case class Props(ref: WorkbenchRef) {
     def url = ref.connection.map(_.url).getOrElse("''")
@@ -39,16 +39,18 @@ case object HomePage extends Page {
             }
         }
 
-      def loadEvents() =
-        client.events { events => //streaming
-          t.modState(s => s.copy(events = events))
-        }.map { events => // Done
+      def loadEvents() = {
+        val stream = client.events { events => //streaming
           t.modState(s => s.copy(events = events))
         }
+        t.modState(s => s.copy(stream = Some(stream)))
+      }
 
       loadInfo()
       loadEvents()
     }
+
+    def willUnMount(): Unit = t.state.stream.map(_.abort())
 
     def refresh() = willMount()
   }
@@ -69,6 +71,7 @@ object HomePageRender {
     .backend(new Backend(_))
     .render((P, S, B) => vdom(S, P, B))
     .componentWillMount(_.backend.willMount)
+    .componentWillUnmount(_.backend.willUnMount)
     .build
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
