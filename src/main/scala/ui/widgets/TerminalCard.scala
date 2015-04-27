@@ -13,13 +13,14 @@ object TerminalCard {
   val RED = "\u001B[31m"
   val LIGHT_GRAY = "\u001B[37m"
   val RESET = "\u001B[0m"
+  val WS_CLOSE_ABNORMAL = 1006
 
   def apply(info: TerminalInfo)(connectionFactory: () => WebSocket) = {
     val props = Props(info, connectionFactory)
     TerminalCardRender.component(props)
   }
 
-  case class State(title: String = "Terminal")
+  case class State(title: String = "Terminal", currentWS: Option[WebSocket] = None)
 
   case class TerminalInfo(stdinOpened: Boolean, stdinAttached: Boolean, stOutAttached: Boolean)
 
@@ -27,13 +28,13 @@ object TerminalCard {
 
   case class Backend(t: BackendScope[Props, State]) {
 
-    lazy val ws = t.props.connectionFactory()
-
     def didMount(): Unit = {
       val config = if (t.props.info.stdinOpened) util.termJs.DefaultWithStdin else util.termJs.DefaultWithOutStdin
       val terminal = new Terminal(config)
       val element = dom.document.getElementById("terminal")
       initTerminal(terminal, element)
+      val ws = t.props.connectionFactory()
+      t.modState(_.copy(currentWS = Some(ws)))
 
       ws.onmessage = (x: MessageEvent) => {
         terminal.write(x.data.toString.replace("\n", "\r\n"))
@@ -53,8 +54,14 @@ object TerminalCard {
         }
       }
       ws.onclose = (x: CloseEvent) => {
-        log.info(x.toString)
+        log.info("onclose" + x.toString)
+        if (x.code == WS_CLOSE_ABNORMAL) {
+          log.info("try to reconnect")
+          terminal.destroy()
+          didMount() // reconnect
+        } else {
         terminal.write("\r\n\u001B[31m[Disconnected] " + x.reason + "\u001B[0m")
+        }
       }
       ws.onerror = (x: ErrorEvent) => {
         log.info("some error has occurred " + x.message)
@@ -75,12 +82,15 @@ object TerminalCard {
       dom.window.addEventListener("resize", (e: dom.Event) => {
         autoResize(terminal, element)
       })
-      autoResize(terminal, element)
+
+      scalajs.js.timers.setTimeout(200) {
+        autoResize(terminal, element)
+      }
     }
 
     def willUnmount() = {
       log.info("Terminal willUnmount")
-      ws.close(1000, "Disconnect ws")
+      t.state.currentWS.foreach(_.close(1000, "Disconnect ws"))
     }
   }
 }

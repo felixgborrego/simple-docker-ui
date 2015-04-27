@@ -21,18 +21,22 @@ object termJs {
     def on(event: String, f: js.Function1[String, _]): Unit = js.native
 
     def blur(): Unit = js.native
+
+    //def reset(): Unit = js.native
+
+    def destroy(): Unit = js.native
   }
 
 
-  def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = true, useStyle = true)
+  def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = ROWS, screenKeys = true, useStyle = true)
 
-  def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = 15, screenKeys = false, useStyle = false, cursorBlink = false)
+  def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = ROWS, screenKeys = false, useStyle = false, cursorBlink = false)
 
   def initTerminal(terminal: Terminal, element: Element) = {
     terminal.open(element)
   }
 
-
+  val ROWS = 24
   def autoResize(terminal: Terminal, element: Element) = {
     val width = dom.document.body.clientWidth
 
@@ -40,7 +44,7 @@ object termJs {
     val cols = (width / 6.8).toInt
     val extraCols = if (cols < 129) -3 else if (cols < 148) -2 else if (cols < 180) -1 else 0
     val fixedCols = cols + extraCols
-    terminal.resize(fixedCols, 20)
+    terminal.resize(fixedCols, ROWS)
   }
 
 }
