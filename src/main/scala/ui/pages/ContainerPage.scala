@@ -111,7 +111,7 @@ object ContainerPageRender {
 
   def vdomInfo(containerInfo: ContainerInfo, S: State, P: Props, B: Backend) = {
     val generalInfo = Map(
-      "Id / Name" -> containerInfo.id,
+      "Id / Name" -> (containerInfo.id + " " + containerInfo.Name),
       "Created" -> containerInfo.created,
       "Status" -> (if (containerInfo.State.Running) "Running" else "Stopped")
     )
