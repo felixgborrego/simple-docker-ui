@@ -128,7 +128,7 @@ case class DockerClient(connection: Connection) {
   def checkVersion(): Future[Boolean] = version().map(_.apiVersion).map {
     case (mayor, _) if (mayor > Mayor) => true
     case (mayor, minor) if (mayor == Mayor && minor >= Minor) => true
-    case x => false
+    case _ => false
   }
 
   private def version(): Future[Version] =
