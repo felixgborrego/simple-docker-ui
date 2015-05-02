@@ -89,6 +89,7 @@ package object model {
                            Created: String,
                            Config: ContainerConfig,
                            State: ContainerState,
+                           Volumes: Map[String,String],
                            NetworkSettings: NetworkSettings) {
     def id = subId(Id)
 

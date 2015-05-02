@@ -127,9 +127,10 @@ object ContainerPageRender {
 
     val networkInfo = Map(
       "Ip" -> containerInfo.NetworkSettings.IPAddress,
-      "Port Mapping" -> ports,
-      "Volumes" -> "---"
-    )
+      "Port Mapping" -> ports
+    ) ++
+      containerInfo.Volumes.map { case (k, v) => ("volume: " + k, v) }
+
 
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None,
