@@ -20,7 +20,9 @@ object TerminalCard {
     TerminalCardRender.component(props)
   }
 
-  case class State(title: String = "Terminal", currentWS: Option[WebSocket] = None)
+  case class State(title: String = "Terminal",
+                   currentWS: Option[WebSocket] = None,
+                   currentTerminal: Option[Terminal] = None)
 
   case class TerminalInfo(stdinOpened: Boolean, stdinAttached: Boolean, stOutAttached: Boolean)
 
@@ -34,7 +36,7 @@ object TerminalCard {
       val element = dom.document.getElementById("terminal")
       initTerminal(terminal, element)
       val ws = t.props.connectionFactory()
-      t.modState(_.copy(currentWS = Some(ws)))
+      t.modState(_.copy(currentWS = Some(ws), currentTerminal = Some(terminal)))
 
       ws.onmessage = (x: MessageEvent) => {
         terminal.write(x.data.toString.replace("\n", "\r\n"))
@@ -90,7 +92,13 @@ object TerminalCard {
 
     def willUnmount() = {
       log.info("Terminal willUnmount")
-      t.state.currentWS.foreach(_.close(1000, "Disconnect ws"))
+      t.state.currentWS.foreach{ ws =>
+        ws.onclose = (x: CloseEvent) => {}
+        ws.onerror = (x: ErrorEvent) => {}
+        ws.onmessage = (x: MessageEvent) => {}
+        ws.close(1000, "Disconnect ws")
+      }
+      t.state.currentTerminal.foreach(_.destroy())
     }
   }
 }
