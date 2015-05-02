@@ -29,34 +29,41 @@ object SettingsPage extends Page {
           ConfigStorage.defaultUrl.map { url =>
             t.modState(_.copy(url = url, Some("There is no connection configuration")))
           }
-        case Some(c) => t.modState(s => s.copy(c.url, None))
+        case Some(c) =>
+          t.modState(s => s.copy(c.url, None))
+          check(c.url, reconnect = false)
+      }
+    }
+
+    def check(url: String, reconnect: Boolean): Unit = {
+
+      DockerClient(Connection(url)).checkVersion().map {
+        case true =>
+          sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
+          t.modState(s => State(url, None))
+          if (reconnect) ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
+        case false =>
+          sendEvent(EventCategory.Connection, EventAction.InvalidVersion, "Settings")
+          t.modState(s => s.copy(url, Some(
+            s"""There is connection but Docker UI requires a newer version.
+               |Minimum Remote API supported is ${DockerClientConfig.DockerVersion}""".stripMargin)))
+      }.onFailure {
+        case ex: Exception =>
+          log.info(s"Unable to connected to $url")
+          t.modState(s => s.copy
+            (url, Some(s"Unable to connected to $url")))
       }
     }
 
     def save(): Unit = {
       val url = t.state.url
       if (url.startsWith("http")) {
-        DockerClient(Connection(url)).checkVersion().map {
-          case true =>
-            sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
-            t.modState(s => State(url, None))
-            ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
-          case false =>
-            sendEvent(EventCategory.Connection, EventAction.InvalidVersion, "Settings")
-            t.modState(s => s.copy(url, Some(
-              s"""Docker UI requires a newer version.
-                 |Minimum Remote API supported is ${DockerClientConfig.DockerVersion}""".stripMargin)))
-        }.onFailure {
-          case ex: Exception =>
-            log.info(s"Unable to connected to $url")
-            t.modState(s => s.copy(url, Some(s"Unable to connected to $url")))
-        }
+        check(url, reconnect = true)
       } else {
         sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
         log.info("Invalid $url")
       }
     }
-
   }
 
   def component(ref: WorkbenchRef) = {
