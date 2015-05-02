@@ -4,7 +4,9 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import org.scalajs.dom
+import org.scalajs.dom.ext.AjaxException
 import ui.WorkbenchRef
+import ui.widgets.Alert
 import util.StringUtils._
 import util.logger._
 
@@ -38,7 +40,7 @@ object ContainerRequestForm {
 
 
     def updateName(e: ReactEventI) =
-      t.modState(s => s.copy(request = s.request.copy(name = e.target.value.replaceAll("\\s", ""))))
+      t.modState(s => s.copy(request = s.request.copy(name = e.target.value.replaceAll("\\s", "")), warnings = Seq.empty))
 
 
     def updateCmd(e: ReactEventI) = {
@@ -94,9 +96,9 @@ object ContainerRequestForm {
         }
 
       task.onFailure {
-        case ex: Exception =>
+        case ex: AjaxException =>
           log.error("ImagesPage", "Unable to get Metadata", ex)
-          t.modState(s => s.copy(warnings = Seq(ex.toString)))
+          t.modState(s => s.copy(warnings = Seq(ex.xhr.responseText)))
       }
     }
 
@@ -178,6 +180,7 @@ object ContainerRequestFormRender {
           ),
           <.div(^.className := "modal-body",
             S.message.map(<.i(_)),
+            S.warnings.map(Alert(_)),
             <.form(^.className := "form-horizontal",
               <.div(^.className := "form-group",
                 <.label(^.className := "col-xs-3 control-label", "Container Name"),
