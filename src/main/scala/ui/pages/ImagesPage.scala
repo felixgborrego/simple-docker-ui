@@ -26,7 +26,7 @@ object ImagesPage extends Page {
       else
         "glyphicon glyphicon-search"
 
-    def totalSize = bytesToSize(localImages.map(_.VirtualSize).sum)
+    def totalSize = bytesToSize(localImages.map(_.VirtualSize.toLong).sum)
   }
 
   case class Props(ref: WorkbenchRef)

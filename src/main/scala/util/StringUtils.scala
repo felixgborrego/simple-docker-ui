@@ -17,7 +17,7 @@ object StringUtils {
   }
 
 
-  def bytesToSize(bytes: Int) = {
+  def bytesToSize(bytes: Long) = {
     val Sizes = Seq("Bytes", "KB", "MB", "GB", "TB")
     if (bytes == 0) {
       "0 Byte"

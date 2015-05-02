@@ -18,7 +18,7 @@ package object model {
                             containers: Seq[Container],
                             images: Seq[Image]) {
 
-    def totalImagesSize = bytesToSize(images.map(_.VirtualSize).sum)
+    def totalImagesSize = bytesToSize(images.map(_.VirtualSize.toLong).sum)
     def totalContainersSize = bytesToSize(containers.map(c=> c.SizeRootFs+ c.SizeRw).sum)
   }
 
