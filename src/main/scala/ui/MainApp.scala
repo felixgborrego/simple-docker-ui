@@ -1,8 +1,9 @@
 package ui
 
 import japgolly.scalajs.react._
-import util.logger._
 import org.scalajs.dom
+import util.chrome.api._
+import util.logger._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -12,7 +13,7 @@ object MainApp extends JSApp {
 
   @JSExport
   override def main(): Unit = {
-    log.info("Staring app")
+    log.info(s"Staring app ${chrome.runtime.getManifest().version}")
     val ui = Workbench()
     React.render(ui, dom.document.getElementById("container"))
   }
