@@ -88,9 +88,13 @@ object HomePageRender {
     )
     <.div(
       ContainersCard(docker, ref)(() => B.refresh()),
-      InfoCard(info, InfoCard.SMALL, Some("System"))
+      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter)
     )
   }
+
+  val infoFooter = Some(<.div(^.className:="panel-footer alert-warning"," Please note this is a beta version, ",
+    <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/issues",^.target:="blank", "any feedback is more than welcome!"
+    )))
 
   def vdomEvents(events: Seq[DockerEvent]) = {
     val values = events.map(e => Map("Status" -> e.status, "Id" -> e.shortId, "From" -> e.from, "Time" -> e.since))
