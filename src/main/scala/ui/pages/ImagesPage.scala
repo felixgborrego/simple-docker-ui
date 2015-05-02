@@ -1,13 +1,14 @@
 package ui.pages
 
+import api.DockerClient
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import ui.WorkbenchRef
 import ui.widgets.PullModalDialog.ActionsBackend
 import ui.widgets.{Alert, PullModalDialog}
-import util.logger._
 import util.StringUtils._
+import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -18,6 +19,7 @@ object ImagesPage extends Page {
   case class State(localImages: Seq[Image] = Seq.empty,
                    remoteImages: Seq[ImageSearch] = Seq.empty,
                    searching: Boolean = false,
+                   searchText: String = "",
                    imageToPull: Option[ImageSearch] = None,
                    error: Option[String] = None) {
     def searchIcon =
@@ -46,18 +48,29 @@ object ImagesPage extends Page {
 
     def onTextChange(e: ReactEventI): Unit = t.props.ref.client.map { client =>
       val text = e.target.value
+      val searching = t.state.searching
       if (text.isEmpty) {
         t.modState(s => s.copy(remoteImages = Seq.empty, searching = false))
-      } else if (text.length > MinTextSize || t.state.remoteImages.nonEmpty) {
-        t.modState(s => s.copy(searching = true))
-        client.imagesSearch(text).map { images =>
-          log.info(s"images ${images.size}")
-          t.modState(s => s.copy(remoteImages = images, searching = false))
-        }.onFailure {
-          case ex: Exception =>
-            log.error("ImagesPage", "Unable to get Metadata", ex)
-            t.modState(s => s.copy(error = Some(s"Unable to connect")))
-        }
+      } else if (!searching && text.length > MinTextSize) {
+        t.modState(s => s.copy(searching = true, searchText = text))
+        search(client, text)
+      } else {
+        t.modState(s => s.copy(searchText = text))
+      }
+    }
+
+    def search(client: DockerClient, text: String): Unit = {
+      client.imagesSearch(text).map { images =>
+        log.info(s"images ${images.size}")
+        t.modState(_.copy(remoteImages = images))
+        if (t.state.searchText != text)
+          search(client, t.state.searchText)
+        else
+          t.modState(_.copy(searching = false))
+      }.onFailure {
+        case ex: Exception =>
+          log.error("ImagesPage", "Unable to get Metadata", ex)
+          t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
     }
 
