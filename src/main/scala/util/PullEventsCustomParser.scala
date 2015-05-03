@@ -13,7 +13,12 @@ import scala.util.Try
  */
 object PullEventsCustomParser {
 
-  case class EventStream(var events: ArrayBuffer[EventStatus] = ArrayBuffer.empty, var indexLastInValid: Int = 0 )
+  case class EventStream(var events: ArrayBuffer[EventStatus] = ArrayBuffer.empty, var indexLastInValid: Int = 0, var data: String = "", var done: Boolean = false) {
+    def refreshEvents() = {
+      PullEventsCustomParser.parse(this, data)
+      events
+    }
+  }
 
   case class EventStatus(id: String, var progressValue: Int, var status: String, var progressText: String)
 

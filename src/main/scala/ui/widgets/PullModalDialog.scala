@@ -8,8 +8,6 @@ import org.scalajs.dom
 import ui.WorkbenchRef
 import util.PullEventsCustomParser.EventStatus
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 object PullModalDialog {
 
   trait ActionsBackend {
@@ -44,14 +42,16 @@ object PullModalDialog {
       }
     }
 
-
     def pullImage(): Unit = t.props.ref.client.map { client =>
-      client.pullImage(t.props.image.name) { updates =>
-        t.modState(s => s.copy(progress = s.progress.copy(events = updates, running = true)))
-      }.map { done =>
-        t.props.actionsBackend.imagePulled()
-        t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
-      }
+      val stream = client.pullImage(t.props.image.name)
+      t.modState(s => s.copy(progress = s.progress.copy(running = true)))
+      def refresh(): Unit = dom.setTimeout(() => {
+        val events = stream.refreshEvents()
+        t.modState(s => s.copy(progress = s.progress.copy(events = events, running = true)))
+        if (!stream.done) refresh()
+        else t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
+      }, 1000)
+      refresh()
     }
   }
 

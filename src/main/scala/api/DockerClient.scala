@@ -5,10 +5,10 @@ import model._
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle._
+import util.EventsCustomParser
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.logger._
-import util.{EventsCustomParser, PullEventsCustomParser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
@@ -168,7 +168,7 @@ case class DockerClient(connection: Connection) {
     new WebSocket(ws)
   }
 
-  def pullImage(term: String)(update: Seq[EventStatus] => Unit): Future[Seq[EventStatus]] = {
+  def pullImage(term: String): EventStream = {
     val Loading = 3
     val Done = 4
     val p = Promise[Seq[EventStatus]]
@@ -176,18 +176,16 @@ case class DockerClient(connection: Connection) {
 
     val currentStream = EventStream()
     xhr.onreadystatechange = { event: Event =>
-      PullEventsCustomParser.parse(currentStream, xhr.responseText)
-      if (xhr.readyState == Loading) {
-        update(currentStream.events)
-      } else if (xhr.readyState == Done) {
-        p.success(currentStream.events)
+      currentStream.data = xhr.responseText
+      if (xhr.readyState == Done) {
+        currentStream.done = true
       }
     }
 
     xhr.open("POST", s"$url/images/create?fromImage=$term", async = true)
     log.info(s"[dockerClient.pullImage] start")
     xhr.send()
-    p.future
+    currentStream
   }
 
   def createContainer(name: String, request: CreateContainerRequest): Future[CreateContainerResponse] =
