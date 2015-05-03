@@ -2,7 +2,7 @@ package api
 
 import api.DockerClientConfig.APIRequired._
 import model._
-import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle._
 import util.EventsCustomParser.DockerEventStream
@@ -74,7 +74,30 @@ case class DockerClient(connection: Connection) {
   def removeContainer(containerId: String): Future[Unit] =
     Ajax.delete(s"$url/containers/$containerId", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.removeContainer] return: " + xhr.readyState)
+    }.recover {
+      case ex: AjaxException =>
+        log.info(s"Unable to delete $containerId} ${ex.xhr.responseText}")
     }
+
+  def removeImage(imageId: String): Future[Unit] =
+    Ajax.delete(s"$url/images/$imageId", timeout = HttpTimeOut).map { xhr =>
+      log.info("[dockerClient.removeImage] return: " + xhr.readyState)
+    }.recover {
+      case ex: AjaxException =>
+        log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
+    }
+
+  def garbageCollectionImages(): Future[Seq[Image]] =
+    images().flatMap { images =>
+      Future.sequence(images.map(image => removeImage(image.Id)))
+    }.flatMap(_ => images())
+
+
+  def garbageCollectionContainers(): Future[ContainersInfo] =
+    containers(all = true).flatMap { containers =>
+      Future.sequence(containers.map(container => removeContainer(container.Id)))
+    }.flatMap(_ => containersInfo())
+
 
   def top(containerId: String): Future[ContainerTop] =
     Ajax.get(s"$url/containers/$containerId/top", timeout = HttpTimeOut).map { xhr =>

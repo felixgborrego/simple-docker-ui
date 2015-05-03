@@ -6,11 +6,12 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
 import ui.WorkbenchRef
 import ui.widgets.PullModalDialog.ActionsBackend
-import ui.widgets.{Alert, PullModalDialog}
+import ui.widgets.{Alert, Button, InfoCard, PullModalDialog}
 import util.StringUtils._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object ImagesPage extends Page {
 
@@ -21,6 +22,7 @@ object ImagesPage extends Page {
                    searching: Boolean = false,
                    searchText: String = "",
                    imageToPull: Option[ImageSearch] = None,
+                   deleting: Boolean = false,
                    error: Option[String] = None) {
     def searchIcon =
       if (searching)
@@ -44,7 +46,7 @@ object ImagesPage extends Page {
       }
     }
 
-    val MinTextSize = 3
+    val MinTextSize = 2
 
     def onTextChange(e: ReactEventI): Unit = t.props.ref.client.map { client =>
       val text = e.target.value
@@ -82,6 +84,9 @@ object ImagesPage extends Page {
 
     override def imagePulled(): Unit = refresh()
 
+    def garbageCollection(): Future[Unit] = t.props.ref.client.get.garbageCollectionImages().map { images =>
+      t.modState(s => s.copy(localImages = images))
+    }
   }
 
   def component(ref: WorkbenchRef) = {
@@ -106,16 +111,15 @@ object ImagesPageRender {
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_)),
     remoteSearch(S, P, B),
-    table("Local images", S, P),
+    table("Local images", S, P, B),
     S.imageToPull.map(image => PullModalDialog(B, image, P.ref))
   )
 
-  def table(title: String, S:State, P: Props) =
+  def table(title: String, S: State, P: Props, B: Backend) =
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title),
-          <.span(^.className := "panel-title pull-right", "Total: ", S.totalSize)
+          <.h3(^.className := "panel-title pull-left")(<.span(^.className := "glyphicon glyphicon-hdd"), " " + title)
         ),
         <.table(^.className := "table table-hover table-striped",
           <.thead(
@@ -140,9 +144,18 @@ object ImagesPageRender {
       )
     )
 
+
+  def vdomCommands(S: State, B: Backend) =
+    Some(<.div(^.className := "panel-footer",
+      <.div(^.className := "btn-group btn-group-justified",
+        <.div(^.className := "btn-group",
+          Button("Garbage Collection", "glyphicon-trash")(B.garbageCollection)
+        )
+      )
+    ))
+
   def remoteSearch(S: State, P: Props, B: Backend) =
     <.div(
-      <.div(^.className := "container  col-sm-2"),
       <.div(^.className := "container  col-sm-8",
         <.div(^.className := "bootcards-list ",
           <.div(^.className := "panel panel-default",
@@ -160,9 +173,15 @@ object ImagesPageRender {
           )
         )
       ),
-      <.div(^.className := "container  col-sm-2")
+      imagesInfo(S, B)
     )
 
+  def imagesInfo(S: State, B: Backend) = {
+    val info = Map(
+      "Total Size" -> S.totalSize
+    )
+    InfoCard(info, InfoCard.SMALL, None, Seq.empty, vdomCommands(S, B))
+  }
 
   var data_toggle = "data-toggle".reactAttr
   val data_target = "data-target".reactAttr

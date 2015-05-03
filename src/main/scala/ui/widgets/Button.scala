@@ -20,7 +20,7 @@ object Button {
       else
         "glyphicon glyphicon " + t.props.icon
 
-    def text = if (t.state.running) "" else t.props.text
+    def text = if (t.state.running) "" else " " + t.props.text
 
     def click() = {
       t.modState(s => s.copy(running = true))
@@ -47,7 +47,7 @@ private object ButtonRender {
   def vdom(P: Props, S: State, B: Backend) =
     <.button(^.className := "btn btn-default", ^.onClick --> B.click(),
       (P.disabled || S.running) ?= (^.disabled := "disabled"),
-      <.i(^.className := B.className, " " + B.text)
+      <.i(^.className := B.className), <.i(B.text)
     )
 
 

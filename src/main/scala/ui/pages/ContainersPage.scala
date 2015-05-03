@@ -4,7 +4,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.{Container, ContainersInfo}
 import ui.WorkbenchRef
-import ui.widgets.Alert
+import ui.widgets.{Alert, Button}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,6 +29,11 @@ object ContainersPage extends Page {
     }
 
     def refresh() = willMount()
+
+    def garbageCollection() = t.props.ref.client.get.garbageCollectionContainers().map { info =>
+      t.modState(s => State(info))
+    }
+
   }
 
   def component(ref: WorkbenchRef) = {
@@ -50,16 +55,16 @@ object ContainersPageRender {
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    table("glyphicon glyphicon-transfer", "Container Running", S.info.running, P, B),
-    table("glyphicon glyphicon-equalizer", "History", S.info.history, P, B)
+    table("glyphicon glyphicon-transfer", "Container Running", S.info.running, showGC = false, P, B),
+    table("glyphicon glyphicon-equalizer", "History", S.info.history, showGC = true, P, B)
   )
 
-  def table(iconClassName: String, title: String, containers: Seq[Container], props: Props, B: Backend) =
+  def table(iconClassName: String, title: String, containers: Seq[Container], showGC: Boolean, props: Props, B: Backend) =
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left")(<.span(^.className := iconClassName), " " + title),
-          <.a(^.className := "btn pull-right glyphicon glyphicon-refresh", ^.href := "#", ^.onClick --> B.refresh)
+          (showGC && containers.nonEmpty) ?= <.span(^.className := "pull-right", Button("Garbage Collection", "glyphicon-trash")(B.garbageCollection))
         ),
         <.table(^.className := "table table-hover table-striped",
           <.thead(
