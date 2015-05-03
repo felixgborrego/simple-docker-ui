@@ -1,15 +1,28 @@
 package ui.widgets
 
-import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.DockerMetadata
 import ui.WorkbenchRef
 import ui.pages.{ContainersPage, ImagesPage}
-import ui.widgets.ContainersCard.Props
+import util.StringUtils._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 object ContainersCard {
 
+  case class State(totalImagesSize: String = "", numImages: Int = 0)
+
   case class Props(docker: DockerMetadata, ref: WorkbenchRef, refresh: () => Unit)
+
+
+  case class Backend(t: BackendScope[Props, State]) {
+    def didMount(): Unit = t.props.ref.client.map { client =>
+      client.images().map { images =>
+        val totalImagesSize = bytesToSize(images.map(_.VirtualSize.toLong).sum)
+        t.modState(_.copy(totalImagesSize = totalImagesSize, numImages = images.size))
+      }
+    }
+  }
 
   def apply(docker: DockerMetadata, ref: WorkbenchRef)(refresh: () => Unit) = {
     val props = Props(docker, ref, refresh)
@@ -18,12 +31,16 @@ object ContainersCard {
 }
 
 object ContainersCardRender {
+  import ContainersCard._
 
   val component = ReactComponentB[Props]("ContainersCard")
-    .render((P) => vdom(P.docker, P))
+    .initialState(State())
+    .backend(new Backend(_))
+    .render((P, S, B) => vdom(P.docker, S, P))
+    .componentDidMount(_.backend.didMount)
     .build
 
-  def vdom(docker: DockerMetadata, P: Props) =
+  def vdom(docker: DockerMetadata, S: State, P: Props) =
     <.div(^.className := "container  col-sm-8",
       <.div(^.className := "panel panel-default bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
@@ -49,14 +66,14 @@ object ContainersCardRender {
             <.div(^.className := "col-sm-4",
               P.ref.link(ImagesPage)(^.className := "bootcards-summary-item",
                 <.i(^.className := "glyphicon glyphicon3x glyphicon-cloud-download"),
-                <.h4("Images", <.span(^.className := "label label-info")(docker.images.size)),
-                <.i(docker.totalImagesSize)
+                <.h4("Images", <.span(^.className := "label label-info")(S.numImages)),
+                <.i(S.totalImagesSize)
               )
             )
           )
         ),
         <.div(^.className := "panel-footer",
-          <.small(<.strong(docker.images.size), " images downloaded & ", <.strong(docker.info.Containers), " containers")
+          <.small(<.strong(S.numImages), " images downloaded & ", <.strong(docker.info.Containers), " containers")
         )
       )
     )

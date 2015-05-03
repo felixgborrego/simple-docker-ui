@@ -28,6 +28,7 @@ case object HomePage extends Page {
       def loadInfo() =
         client.metadata().map { info =>
           t.modState(s => s.copy(info = Some(info), error = None))
+          loadEvents()
         }.onFailure {
           case ex: Exception =>
             log.error("HomePage", "Unable to get Metadata", ex)
@@ -47,7 +48,6 @@ case object HomePage extends Page {
       }
 
       loadInfo()
-      loadEvents()
     }
 
     def willUnMount(): Unit = t.state.stream.map(_.abort())

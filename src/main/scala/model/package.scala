@@ -15,10 +15,8 @@ package object model {
   case class DockerMetadata(connection: Connection,
                             info: Info,
                             version: Version,
-                            containers: Seq[Container],
-                            images: Seq[Image]) {
+                            containers: Seq[Container]) {
 
-    def totalImagesSize = bytesToSize(images.map(_.VirtualSize.toLong).sum)
     def totalContainersSize = bytesToSize(containers.map(c=> c.SizeRootFs+ c.SizeRw).sum)
   }
 

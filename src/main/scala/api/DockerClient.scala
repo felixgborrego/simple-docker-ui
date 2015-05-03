@@ -43,8 +43,7 @@ case class DockerClient(connection: Connection) {
     info <- info()
     version <- version()
     containers <- containers(all = false)
-    images <- images()
-  } yield DockerMetadata(connection, info, version, containers, images)
+  } yield DockerMetadata(connection, info, version, containers)
 
 
   def containersInfo(): Future[ContainersInfo] = for {
