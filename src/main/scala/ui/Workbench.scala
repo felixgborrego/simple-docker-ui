@@ -23,7 +23,7 @@ object Workbench {
 
     def show(page: Page) = t.modState { s =>
       sendAppView(page.id)
-      Workbench.State(Some(page), s.connection)
+      s.copy(selectedPage = Some(page))
     }
 
     def componentWillMount() = connectSavedConnection()
@@ -47,7 +47,6 @@ object Workbench {
       } yield connectSavedConnection()
 
       test.onFailure { case _ => show(SettingsPage) }
-
     }
 
     def reconnect(): Unit =
@@ -55,8 +54,6 @@ object Workbench {
         log.info(s"workbench reconnected to $connection")
         t.modState(s => s.copy(connection = connection))
       }
-
-
   }
 
   def apply() = {
@@ -82,7 +79,6 @@ object WorkbenchRender {
       Header(WorkbenchRef(S, B)),
       S.selectedPage.map(_.component(WorkbenchRef(S, B)))
     )
-
 }
 
 case class WorkbenchRef(state: State, backend: Backend) {

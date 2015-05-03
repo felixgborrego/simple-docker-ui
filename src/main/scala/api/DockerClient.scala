@@ -140,10 +140,9 @@ case class DockerClient(connection: Connection) {
       read[Seq[Container]](xhr.responseText)
     }
 
-
-  private def info(): Future[Info] =
-    Ajax.get(s"$url/info", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.info] return: " + xhr.responseText)
+  //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#display-system-wide-information
+  def info(): Future[Info] =
+    Ajax.get(s"$url/info").map { xhr =>
       read[Info](xhr.responseText)
     }
 
