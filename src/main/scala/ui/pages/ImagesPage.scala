@@ -4,6 +4,7 @@ import api.DockerClient
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
+import org.scalajs.dom.ext.AjaxException
 import ui.WorkbenchRef
 import ui.widgets.PullModalDialog.ActionsBackend
 import ui.widgets.{Alert, Button, InfoCard, PullModalDialog}
@@ -52,9 +53,9 @@ object ImagesPage extends Page {
       val text = e.target.value
       val searching = t.state.searching
       if (text.isEmpty) {
-        t.modState(s => s.copy(remoteImages = Seq.empty, searching = false))
+        t.modState(s => s.copy(remoteImages = Seq.empty, searching = false, error = None))
       } else if (!searching && text.length > MinTextSize) {
-        t.modState(s => s.copy(searching = true, searchText = text))
+        t.modState(s => s.copy(searching = true, searchText = text, error = None))
         search(client, text)
       } else {
         t.modState(s => s.copy(searchText = text))
@@ -70,9 +71,9 @@ object ImagesPage extends Page {
         else
           t.modState(_.copy(searching = false))
       }.onFailure {
-        case ex: Exception =>
+        case ex: AjaxException =>
           log.error("ImagesPage", "Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some(s"Unable to connect")))
+          t.modState(s => s.copy(error = Some(s"Unable to connect"), searching = false))
       }
     }
 
@@ -80,7 +81,10 @@ object ImagesPage extends Page {
       t.modState(s => s.copy(imageToPull = Some(image)))
     }
 
-    def refresh() = willMount()
+    def refresh() = {
+      t.modState(_.copy(remoteImages = Seq.empty, searchText = ""))
+      willMount()
+    }
 
     override def imagePulled(): Unit = refresh()
 

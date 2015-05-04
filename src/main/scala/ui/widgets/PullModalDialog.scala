@@ -18,7 +18,6 @@ object PullModalDialog {
                            finished: Boolean = false,
                            events: Seq[EventStatus] = Seq.empty) {
 
-
     val done = !running && events.nonEmpty
 
     def message = if (finished) events.headOption.map(_.status) else None
@@ -42,6 +41,7 @@ object PullModalDialog {
       }
     }
 
+    val RefreshMilliseconds = 1000
     def pullImage(): Unit = t.props.ref.client.map { client =>
       val stream = client.pullImage(t.props.image.name)
       t.modState(s => s.copy(progress = s.progress.copy(running = true)))
@@ -49,8 +49,11 @@ object PullModalDialog {
         val events = stream.refreshEvents()
         t.modState(s => s.copy(progress = s.progress.copy(events = events, running = true)))
         if (!stream.done) refresh()
-        else t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
-      }, 1000)
+        else {
+          t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
+          t.props.actionsBackend.imagePulled()
+        }
+      }, RefreshMilliseconds)
       refresh()
     }
   }
@@ -101,16 +104,16 @@ object PullModalDialogRender {
             ),
             <.h3(^.className := "modal-title")(title)
           ),
-            <.div(^.className := "modal-body",
-              S.progress.message.map(<.i(_)),
-              <.div(^.className := "list-group",
-                <.div(^.className := "list-group-item noborder",
-                  <.i(^.className := "list-group-item-text")("Description"),
-                  <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", P.image.description)
-                ),
-                (running || finished) ?= table(S.progress.events)
-              )
+          <.div(^.className := "modal-body",
+            S.progress.message.map(<.i(_)),
+            <.div(^.className := "list-group",
+              <.div(^.className := "list-group-item noborder",
+                <.i(^.className := "list-group-item-text")("Description"),
+                <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", P.image.description)
+              ),
+              (running || finished) ?= table(S.progress.events)
             )
+          )
           ,
           <.div(^.className := "modal-footer",
             P.image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),

@@ -45,7 +45,7 @@ object PullEventsCustomParser {
     newEvents.foreach { rawEvent =>
       val index = currentStream.events.indexWhere(_.id == rawEvent.id)
       if (index != -1) {
-        // contains using this as an optimization
+        // using this as an optimization
         val event = currentStream.events(index)
         event.progressValue = progressValue(rawEvent)
         event.progressText = progressText(rawEvent)

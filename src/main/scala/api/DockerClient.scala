@@ -16,6 +16,7 @@ import scala.scalajs.js
 
 object DockerClientConfig {
   val HttpTimeOut = 10 * 1000
+  val HttpExternalTimeOut = 20 * 1000
   val PingTimeOut = 4 * 1000
   val DockerVersion = s"v$Mayor.$Minor"
 
@@ -131,7 +132,7 @@ case class DockerClient(connection: Connection) {
     }
 
   def imagesSearch(term: String): Future[Seq[ImageSearch]] =
-    Ajax.get(s"$url/images/search?term=${term.toLowerCase}", timeout = HttpTimeOut).map { xhr =>
+    Ajax.get(s"$url/images/search?term=${term.toLowerCase}", timeout = HttpExternalTimeOut).map { xhr =>
       log.info("[dockerClient.imagesSearch]")
       read[Seq[ImageSearch]](xhr.responseText)
     }
