@@ -1,5 +1,6 @@
 package ui.pages
 
+import api.DockerClientConfig
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.{Container, ContainersInfo}
@@ -64,7 +65,10 @@ object ContainersPageRender {
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left")(<.span(^.className := iconClassName), " " + title),
-          (showGC && containers.nonEmpty) ?= <.span(^.className := "pull-right", Button("Garbage Collection", "glyphicon-trash")(B.garbageCollection))
+          (showGC && containers.size > DockerClientConfig.KeepInGarbageCollection) ?= <.span(^.className := "pull-right",
+            Button("Garbage Collection", "glyphicon-trash",
+              "Removes all unused containers, keeping the 10 recent once")(B.garbageCollection)
+          )
         ),
         <.table(^.className := "table table-hover table-striped",
           <.thead(

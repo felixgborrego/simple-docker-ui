@@ -23,6 +23,9 @@ object DockerClientConfig {
     val Mayor = 1
     val Minor = 17
   }
+
+
+  val KeepInGarbageCollection = 10
 }
 
 case class DockerClient(connection: Connection) {
@@ -94,7 +97,7 @@ case class DockerClient(connection: Connection) {
 
   def garbageCollectionContainers(): Future[ContainersInfo] =
     containers(all = true).flatMap { containers =>
-      Future.sequence(containers.map(container => removeContainer(container.Id)))
+      Future.sequence(containers.drop(KeepInGarbageCollection).map(container => removeContainer(container.Id)))
     }.flatMap(_ => containersInfo())
 
 

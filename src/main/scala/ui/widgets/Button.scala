@@ -2,6 +2,7 @@ package ui.widgets
 
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
+import org.scalajs.jquery.jQuery
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -10,7 +11,7 @@ object Button {
 
   case class State(running: Boolean = false)
 
-  case class Props(text: String, icon: String, disabled: Boolean, command: () => Future[Any])
+  case class Props(text: String, icon: String, title: String, disabled: Boolean, command: () => Future[Any])
 
   case class Backend(t: BackendScope[Props, State]) {
 
@@ -28,10 +29,16 @@ object Button {
         t.modState(s => s.copy(running = false))
       }
     }
+
+    def didMount() = {
+      val element = jQuery(t.getDOMNode()).asInstanceOf[scalajs.js.Dynamic]
+      println(element)
+      element.tooltip()
+    }
   }
 
-  def apply(text: String, icon: String, disabled: Boolean = false)(command: => Future[Any]) =
-    ButtonRender.component(Props(text, icon, disabled, () => command))
+  def apply(text: String, icon: String, title: String = "", disabled: Boolean = false)(command: => Future[Any]) =
+    ButtonRender.component(Props(text, icon, title, disabled, () => command))
 }
 
 private object ButtonRender {
@@ -42,14 +49,18 @@ private object ButtonRender {
     .initialState(State())
     .backend(new Backend(_))
     .render((P, S, B) => vdom(P, S, B))
+    .componentDidMount(_.backend.didMount())
     .build
+
+  val data_toggle = "data-toggle".reactAttr
+  val data_placement = "data-placement".reactAttr
+  val title = "title".reactAttr
 
   def vdom(P: Props, S: State, B: Backend) =
     <.button(^.className := "btn btn-default", ^.onClick --> B.click(),
+      data_toggle := "tooltip", title := P.title, data_placement := "top",
       (P.disabled || S.running) ?= (^.disabled := "disabled"),
       <.i(^.className := B.className), <.i(B.text)
     )
-
-
 }
 

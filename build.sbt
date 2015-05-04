@@ -6,7 +6,7 @@ lazy val root = project.in(file("."))
   .settings(
     name := "dockerui",
     persistLauncher := true,
-   scalacOptions ++= Seq(
+    scalacOptions ++= Seq(
       "-Xlint",
       "-deprecation",
       "-Xfatal-warnings"
@@ -14,6 +14,7 @@ lazy val root = project.in(file("."))
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "upickle" % "0.2.8",
       "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
+      "be.doeraene" %%% "scalajs-jquery" % "0.8.0",
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.3"
     ),
     artifactPath in (Compile, fullOptJS) := (baseDirectory in ThisBuild).value / "chromeapp" / "scalajs-opt.js",
