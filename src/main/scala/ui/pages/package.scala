@@ -1,18 +1,17 @@
-package ui
+package ui.pages
 
 import japgolly.scalajs.react.ReactElement
 import japgolly.scalajs.react.vdom.prefix_<^._
+import ui.WorkbenchRef
 
-package object pages {
+trait Page {
+  def id: String
 
-  trait Page {
-    def id: String
+  def component(ref: WorkbenchRef): ReactElement
+}
 
-    def component(ref: WorkbenchRef): ReactElement
-  }
+case object EmptyPage extends Page {
+  def id = "Empty"
 
-  case object EmptyPage extends Page{
-    def id= "Empty"
-    def component(ref: WorkbenchRef): ReactElement = <.div()
-  }
+  def component(ref: WorkbenchRef): ReactElement = <.div()
 }

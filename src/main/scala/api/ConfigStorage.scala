@@ -26,8 +26,7 @@ object ConfigStorage {
     val p = Promise[Unit]()
     val jsObject = scalajs.js.Dynamic.literal(key -> value)
     chrome.storage.local.set(jsObject, { () =>
-      log.info(s"'$key' Saved")
-      p.success()
+      p.success(log.info(s"'$key' Saved"))
     })
     p.future
   }

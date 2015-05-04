@@ -61,7 +61,7 @@ object SettingsPage extends Page {
         check(url, reconnect = true)
       } else {
         sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
-        log.info("Invalid $url")
+        log.info(s"Invalid $url")
       }
     }
   }

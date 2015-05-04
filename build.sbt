@@ -6,6 +6,11 @@ lazy val root = project.in(file("."))
   .settings(
     name := "dockerui",
     persistLauncher := true,
+   scalacOptions ++= Seq(
+      "-Xlint",
+      "-deprecation",
+      "-Xfatal-warnings"
+    ),
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "upickle" % "0.2.8",
       "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
