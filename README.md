@@ -22,6 +22,10 @@ Any feedback is more than welcome!
 
 [Video Example](https://youtu.be/x6RVTHp5M7w)
 
+[Connect to Boot2Docker on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X)
+
+[Connect to Linux](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)
+
 ### Stack
 
 *  [Scala.js](http://www.scala-js.org/)
