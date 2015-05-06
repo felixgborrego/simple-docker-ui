@@ -24,10 +24,10 @@ Any feedback is more than welcome!
 
 ### Main features
 
-* Garbage collection for unused containers. Removing containes that haven't been in use for the last few days.
-* Garbage collection for unused images. Reming images not used by any cointainer.
+* Garbage collection for unused containers. Removing containers that haven't been in use for the last few days.
+* Garbage collection for unused images, Keeping only the once used by a container.
 * Virtual terminal to log into the container.
-* Serch & pull images from the Docker Hub
+* Search & pull images from the Docker Hub
 * Start/stop/delete containers
 * List of running containers and containers history.
 * See Docker events.
