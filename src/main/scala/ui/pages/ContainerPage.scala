@@ -30,7 +30,7 @@ object ContainerPage {
         info <- client.containerInfo(t.props.containerId)
         top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
         changes <- client.containerChanges(t.props.containerId)
-      } yield t.modState(s => s.copy(Some(info), top, changes))
+      } yield t.modState(s => s.copy(Some(info), top, changes, error = None))
 
 
       result.onFailure {
@@ -53,6 +53,8 @@ object ContainerPage {
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
         t.modState(s => s.copy(tabSelected = TabNone))
         refresh()
+      }.recover {
+        case ex: Exception => t.modState(s => s.copy(error = Some(ex.getMessage)))
       }
 
     def refresh() = willMount()
@@ -103,7 +105,7 @@ object ContainerPageRender {
 
   def vdom(P: Props, S: State, B: Backend): ReactElement =
     <.div(
-      S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
+      S.error.map(Alert(_)),
       S.info.map(vdomInfo(_, S, P, B)),
       vDomTabs(S, B)
     )

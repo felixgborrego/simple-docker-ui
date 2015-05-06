@@ -35,7 +35,7 @@ object ContainerRequestForm {
     def didMount(): Unit = {
       // The Dialog is not a react component
       dom.document.getElementById("open-modal-dialog").asInstanceOf[dom.raw.HTMLButtonElement].click()
-      t.modState(s => s.copy(cmdText = s.request.Cmd.mkString(" ")))
+      t.modState(s => s.copy(cmdText = s.request.cmd.mkString(" ")))
     }
 
 
@@ -45,7 +45,6 @@ object ContainerRequestForm {
 
     def updateCmd(e: ReactEventI) = {
       val cmd = e.target.value.split("\\s+").toSeq
-      println("'" + e.target.value + "--" + cmd + "'")
       t.modState(s => s.copy(cmdText = e.target.value, request = s.request.copy(Cmd = cmd)))
     }
 
@@ -104,7 +103,7 @@ object ContainerRequestForm {
 
     def textCommand = {
       val request = t.state.request
-      val cmd = request.Cmd.mkString(" ")
+      val cmd = request.cmd.mkString(" ")
       val imageName = t.props.imageName
       val nameCommand = if (request.name.isEmpty) "" else s" --name ${request.name}"
       val paramI = if (request.OpenStdin) " -i" else ""
@@ -133,8 +132,8 @@ object ContainerRequestForm {
       OpenStdin = true, // opens stdin
       Cmd = initialConfig.Cmd,
       Image = props.imageName,
-      HostConfig = HostConfig( PublishAllPorts = true,PortBindings = Map.empty),
-      ExposedPorts = exports, //Map("5000" -> new EmptyObject()),
+      HostConfig = HostConfig(PublishAllPorts = true, PortBindings = Map.empty),
+      ExposedPorts = exports,
       name = "")
     val initialState = State(request)
     ContainerRequestFormRender.component(initialState)(props)
