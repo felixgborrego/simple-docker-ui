@@ -22,6 +22,18 @@ Any feedback is more than welcome!
 
 [Video Example](https://youtu.be/x6RVTHp5M7w)
 
+### Main features
+
+* Garbage collection for unused containers. Removing containes that haven't been in use for the last few days.
+* Garbage collection for unused images. Reming images not used by any cointainer.
+* Virtual terminal to log into the container.
+* Serch & pull images from the Docker Hub
+* Start/stop/delete containers
+* List of running containers and containers history.
+* See Docker events.
+
+### Config
+
 [Connect to Boot2Docker on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X)
 
 [Connect to Linux](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)
