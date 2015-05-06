@@ -11,7 +11,7 @@ import scala.scalajs.js
 object ConfigStorage {
 
   val DefaultMacUrl = "https://192.168.59.103:2376"
-  val DefaultLinuxUrl = "http://localhost:4243"
+  val DefaultLinuxUrl = "http://localhost:2375"
   val DefaultWinUrl = ""
   val ParamUrlConnection = "url"
 

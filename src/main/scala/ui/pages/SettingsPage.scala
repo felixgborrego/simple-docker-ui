@@ -91,7 +91,7 @@ object SettingsPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug")," Connection to Docker Remote Api"),
+          <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug"), " Connection to Docker Remote Api"),
           <.div(^.className := "btn-group pull-right",
             <.button(^.className := "btn btn-success", ^.onClick --> B.save,
               <.i(^.className := "fa fa-check", "Save")
@@ -127,7 +127,8 @@ object SettingsPageRender {
                     <.li("Figure out the boot2docker ip using ", <.code("boot2docker ip")),
                     <.li("Open your browser and verify you can connect to https://192.168.59.103:2376/_ping (this will ask for your certificate the first time)"),
                     <.li("Try to reconnect!")
-                  )
+                  ),
+                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
               )
             )
@@ -139,16 +140,40 @@ object SettingsPageRender {
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
                 <.p(^.className := "list-group-item-text",
-                  "You need to enable Docker Remote API. To do so you need to:",
+                  "We'll need to enable the Docker Remote API, but first make sure Docker daemon is up an running using ",<.code("docker info."),
+                  <.h3("Linux with systemd (Ubuntu 15.04, Debian 8,...)"),
+                  "Using systemd, we'll need to enable a systemd socket to access the Docker remote API:",
+                  <.ul(
+                    <.li("Create a new systemd config file called ", <.code("/etc/systemd/system/docker-tcp.socket"), " to make docker available on a TCP socket on port 2375.",
+                      <.pre( """[Unit]
+                               |Description=Docker HTTP Socket for the API
+                               |
+                               |[Socket]
+                               |ListenStream=2375
+                               |BindIPv6Only=both
+                               |Service=docker.service
+                               |
+                               |[Install]
+                               |WantedBy=sockets.target""".stripMargin)
+                    ),
+                    <.li("Register the new systemd http socket and restart docker", <.br(),
+                      <.code( """systemctl enable docker-tcp.socket
+                                |systemctl stop docker
+                                |systemctl start docker-tcp.socket""".stripMargin),
+                      <.li("Open your browser and verify you can connect to http://localhost:2375/_ping")
+                    )
+                  ),
+                  <.h3("Linux without systemd:"),
                   <.ul(
                     <.li("Edit ", <.code("/etc/default/docker"), " to allow connections adding:", <.br(),
                       <.code("DOCKER_OPTS='-H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock'")
                     ),
                     <.li("Restart the Docker service using:", <.br(),
                       <.code("sudo service docker restart"),
-                      <.li("Open your browser and verify you can connect to http://localhost:4243/_ping")
+                      <.li("Open your browser and verify you can connect to http://localhost:2375/_ping")
                     )
-                  )
+                  ),
+                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
               )
             )
@@ -160,7 +185,8 @@ object SettingsPageRender {
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
                 <.p(^.className := "list-group-item-text",
-                  "No tested yet, but you should be able to connect by disabling the TLS."
+                  "No tested yet, but you should be able to connect by disabling the TLS.",
+                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
               )
             )
