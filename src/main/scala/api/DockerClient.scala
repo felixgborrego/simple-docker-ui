@@ -72,6 +72,9 @@ case class DockerClient(connection: Connection) {
 
   def startContainer(containerId: String): Future[ContainerInfo] = {
     Ajax.post(s"$url/containers/$containerId/start", timeout = HttpTimeOut).flatMap(_ => containerInfo(containerId))
+  }.recover {
+    case ex: AjaxException =>
+      throw new Exception(ex.xhr.responseText)
   }
 
   def removeContainer(containerId: String): Future[Unit] =
@@ -90,17 +93,51 @@ case class DockerClient(connection: Connection) {
         log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
     }
 
-  def garbageCollectionImages(): Future[Seq[Image]] =
-    images().flatMap { images =>
-      Future.sequence(images.map(image => removeImage(image.Id)))
+  def garbageCollectionImages(): Future[Seq[Image]] = {
+    val usedImagesId: Future[Seq[String]] = for {
+      containers <- containers(all = true)
+      containersInfo <- Future.sequence(containers.map(container => containerInfo(container.Id)))
+    } yield containersInfo.map(_.Image)
+
+    // process the tree removing any used Image and his parents
+    def filterUsed(images: Seq[Image], imageId: String): Seq[Image] = {
+      val imageFound = images.filter(_.Id == imageId)
+      val remainingImages = images.diff(imageFound)
+      imageFound.headOption match {
+        case None => remainingImages
+        case Some(image) =>
+          // recursively remove parentImages
+          filterUsed(remainingImages, image.ParentId)
+      }
+    }
+
+
+    val imagesToGC = for {
+      all <- images(all = true)
+      usedIds <- usedImagesId
+    } yield {
+        val noUsedImages = usedIds.foldLeft(all) {
+          case (remaining, imageId) => filterUsed(remaining, imageId)
+        }
+        val imagesUsed = all.diff(noUsedImages)
+        noUsedImages.map(_.Id)
+      }
+
+    imagesToGC.flatMap { images =>
+      Future.sequence(images.map(image => removeImage(image)))
     }.flatMap(_ => images())
+  }
 
 
-  def garbageCollectionContainers(): Future[ContainersInfo] =
-    containers(all = true).flatMap { containers =>
-      Future.sequence(containers.drop(KeepInGarbageCollection).map(container => removeContainer(container.Id)))
+  def garbageCollectionContainers(): Future[ContainersInfo] = {
+    containers(all = true).flatMap { all =>
+      def delete(containers: List[Container]): Future[Unit] = containers match {
+        case head :: tail => removeContainer(head.Id).andThen { case _ => delete(tail) }
+        case Nil => Future.successful(())
+      }
+      delete(all.drop(KeepInGarbageCollection).toList)
     }.flatMap(_ => containersInfo())
-
+  }
 
   def top(containerId: String): Future[ContainerTop] =
     Ajax.get(s"$url/containers/$containerId/top", timeout = HttpTimeOut).map { xhr =>
@@ -109,13 +146,13 @@ case class DockerClient(connection: Connection) {
     }
 
   //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-images
-  def images(): Future[Seq[Image]] =
-    Ajax.get(s"$url/images/json", timeout = HttpTimeOut).map { xhr =>
+  def images(all: Boolean = false): Future[Seq[Image]] =
+    Ajax.get(s"$url/images/json?all=$all", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
     }.map {
       _.sortBy(-_.Created)
-        .filterNot(_.RepoTags.contains("<none>:<none>"))
+        .filter(all || !_.RepoTags.contains("<none>:<none>"))
     }
 
 
@@ -222,7 +259,7 @@ case class DockerClient(connection: Connection) {
     }
 
     val eventsUrl = s"$url/events?since=$since"
-    xhr.open("GET",eventsUrl, async = true)
+    xhr.open("GET", eventsUrl, async = true)
     log.info(s"[dockerClient.events] start:  $eventsUrl")
     xhr.send()
 
