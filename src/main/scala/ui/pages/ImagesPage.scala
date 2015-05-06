@@ -153,7 +153,8 @@ object ImagesPageRender {
     Some(<.div(^.className := "panel-footer",
       <.div(^.className := "btn-group btn-group-justified",
         <.div(^.className := "btn-group",
-          Button("Garbage Collection", "glyphicon-trash","Remove all unused images")(B.garbageCollection)
+          Button("Garbage Collection", "glyphicon-trash",
+            "Remove all unused images, keeping only the once used by a container")(B.garbageCollection)
         )
       )
     ))

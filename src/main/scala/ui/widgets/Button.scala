@@ -32,7 +32,6 @@ object Button {
 
     def didMount() = {
       val element = jQuery(t.getDOMNode()).asInstanceOf[scalajs.js.Dynamic]
-      println(element)
       element.tooltip()
     }
   }
@@ -55,10 +54,11 @@ private object ButtonRender {
   val data_toggle = "data-toggle".reactAttr
   val data_placement = "data-placement".reactAttr
   val title = "title".reactAttr
+  val data_container = "data-container".reactAttr
 
   def vdom(P: Props, S: State, B: Backend) =
-    <.button(^.className := "btn btn-default", ^.onClick --> B.click(),
-      data_toggle := "tooltip", title := P.title, data_placement := "top",
+    <.button(^.id := "test", ^.className := "btn btn-default", ^.onClick --> B.click(),
+      data_toggle := "tooltip", title := P.title, data_placement := "top", data_container := "body",
       (P.disabled || S.running) ?= (^.disabled := "disabled"),
       <.i(^.className := B.className), <.i(B.text)
     )
