@@ -131,12 +131,12 @@ object PullModalDialogRender {
     <.div(
       <.br(),
       <.div(^.className := "panel panel-default  bootcards-summary",
-        <.table(^.className := "table table-hover table-striped",
+        <.table(^.className := "table table-condensed table-hover table-striped fixed-table",
           <.thead(
             <.tr(
-              <.th("Id"),
-              <.th("Status"),
-              <.th("Progress")
+              <.th(^.className := "col-sm-2", "Id"),
+              <.th(^.className := "col-sm-7", "Status"),
+              <.th(^.className := "col-sm-3", "Progress")
             )
           ),
           <.tbody(

@@ -53,7 +53,7 @@ object ImagesPage extends Page {
       val text = e.target.value
       val searching = t.state.searching
       if (text.isEmpty) {
-        t.modState(s => s.copy(remoteImages = Seq.empty, searching = false, error = None))
+        t.modState(s => s.copy(remoteImages = Seq.empty, searching = false, error = None, searchText = text))
       } else if (!searching && text.length > MinTextSize) {
         t.modState(s => s.copy(searching = true, searchText = text, error = None))
         search(client, text)
@@ -65,7 +65,7 @@ object ImagesPage extends Page {
     def search(client: DockerClient, text: String): Unit = {
       client.imagesSearch(text).map { images =>
         log.info(s"images ${images.size}")
-        t.modState(_.copy(remoteImages = images))
+        t.modState(_.copy(remoteImages = images, error = None))
         if (t.state.searchText != text)
           search(client, t.state.searchText)
         else
@@ -166,9 +166,10 @@ object ImagesPageRender {
             <.div(^.className := "panel-body",
               <.form(^.className := "form-horizontal",
                 <.div(^.className := "form-group",
-                  <.label(^.className := "col-sm-3 control-label")(<.span(^.className := S.searchIcon), " Registry Hub"),
-                  <.div(^.className := "col-sm-9",
-                    <.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "Search Images...", ^.onChange ==> B.onTextChange)
+                  <.label(^.className := "col-sm-4 control-label")(<.span(^.className := S.searchIcon), " Registry Hub"),
+                  <.div(^.className := "col-sm-8",
+                    <.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "Search Images...",
+                      ^.onChange ==> B.onTextChange,^.value := S.searchText)
                   )
                 )
               )
@@ -195,13 +196,19 @@ object ImagesPageRender {
     <.div(^.className := "list-group",
       S.remoteImages.map { image =>
         <.a(^.className := "list-group-item", ^.onClick --> B.showDetail(image), data_toggle := "modal", data_target := "#editModal",
-          image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
-          (image.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-right")(image.star_count),
-          (image.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-right")(image.star_count),
-          <.h4(^.className := "list-group-item-heading", image.name),
-          <.p(^.className := "list-group-item-text", image.description)
+          <.div(^.className := "row",
+            <.div(^.className := "col-xs-2 col-sm-1",
+              image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
+              (image.star_count == 0) ?= <.i(^.className := "glyphicon glyphicon-star-empty pull-left")(image.star_count),
+              (image.star_count > 0) ?= <.i(^.className := "glyphicon glyphicon-star pull-left")(image.star_count)
+            ),
+            <.div(^.className := "col-xs-9 col-sm-10",
+              <.h4(^.className := "list-group-item-heading", image.name),
+              <.p(^.className := "list-group-item-text", image.description)
+            ),
+            <.div(^.className := "col-xs-1 col-sm-1")
         )
-
+        )
       }
     )
 
