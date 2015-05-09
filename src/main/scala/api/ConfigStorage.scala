@@ -12,7 +12,7 @@ object ConfigStorage {
 
   val DefaultMacUrl = "https://192.168.59.103:2376"
   val DefaultLinuxUrl = "http://localhost:2375"
-  val DefaultWinUrl = ""
+  val DefaultWinUrl = "http://192.168.59.103:2375"
   val ParamUrlConnection = "url"
 
   def saveConnection(url: String) = save(ParamUrlConnection, url)
@@ -46,9 +46,9 @@ object ConfigStorage {
 
   def defaultUrl: Future[String] = os.map {
     case "mac" => DefaultMacUrl
-    case "win" => ""
+    case "win" => DefaultWinUrl
     case "linux" | "openbsd" => DefaultLinuxUrl
-    case _ => DefaultWinUrl
+    case _ => ""
   }
 
   def isRunningBoot2Docker:Future[Boolean] =  os.map {

@@ -1,4 +1,4 @@
-## Docker UI for Chrome
+## Docker UI
  
 Simple Docker UI for Chrome is an unofficial developer tool for monitoring and managing your local Docker containers.
 
@@ -31,6 +31,7 @@ Any feedback is more than welcome!
 * Start/stop/delete containers
 * List of running containers and containers history.
 * See Docker events.
+* Easy GUI to manage Docker
 
 ### Config
 

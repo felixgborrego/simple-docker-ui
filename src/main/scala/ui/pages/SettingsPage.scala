@@ -110,7 +110,7 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-apple"), " Mac OS config")
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-apple"), " Mac OS X config")
             ),
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
@@ -126,7 +126,7 @@ object SettingsPageRender {
                     ),
                     <.li("Figure out the boot2docker ip using ", <.code("boot2docker ip")),
                     <.li("Open your browser and verify you can connect to https://192.168.59.103:2376/_ping (this will ask for your certificate the first time)"),
-                    <.li("Try to reconnect!")
+                    <.li("Try to reconnect! using https://192.168.59.103:2376")
                   ),
                   <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
@@ -140,7 +140,7 @@ object SettingsPageRender {
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
                 <.p(^.className := "list-group-item-text",
-                  "We'll need to enable the Docker Remote API, but first make sure Docker daemon is up an running using ",<.code("docker info."),
+                  "We'll need to enable the Docker Remote API, but first make sure Docker daemon is up an running using ", <.code("docker info."),
                   <.h3("Linux with systemd (Ubuntu 15.04, Debian 8,...)"),
                   "Using systemd, we'll need to enable a systemd socket to access the Docker remote API:",
                   <.ul(
@@ -169,9 +169,10 @@ object SettingsPageRender {
                       <.code("DOCKER_OPTS='-H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock'")
                     ),
                     <.li("Restart the Docker service using:", <.br(),
-                      <.code("sudo service docker restart"),
-                      <.li("Open your browser and verify you can connect to http://localhost:2375/_ping")
-                    )
+                      <.code("sudo service docker restart")
+                    ),
+                    <.li("Open your browser and verify you can connect to http://localhost:2375/_ping"),
+                    <.li("Try to reconnect! using http://localhost:2375")
                   ),
                   <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
@@ -185,9 +186,18 @@ object SettingsPageRender {
             <.div(^.className := "list-group",
               <.div(^.className := "list-group-item",
                 <.p(^.className := "list-group-item-text",
-                  "No tested yet, but you should be able to connect by disabling the TLS.",
-                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
-                )
+                  "The easiest way to connect to Docker Remote API is by disabling TLS.", "To do so, you need to:",
+                  <.ul(
+                    <.li("Log into the boot2docker virtual machine: ", <.code("boot2docker ssh")),
+                    <.li("Add ", <.code("DOCKER_TLS=no"), " to the file ", <.code("/var/lib/boot2docker/profile"), " (may not exist)", <.br(),
+                      <.code("echo \"DOCKER_TLS=no\" | sudo tee /var/lib/boot2docker/profile")
+                    ),
+                    <.li("Restart boot2docker", <.br(), <.code("boot2docker down"),<.br(), <.code("boot2docker up")),
+                    <.li("Open your browser and verify you can connect to http://192.168.59.103:2375/_ping"),
+                    <.li("Try to reconnect! using http://192.168.59.103:2375")
+                  )
+                ),
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
               )
             )
           )
@@ -196,5 +206,6 @@ object SettingsPageRender {
 
     )
   )
+
 
 }
