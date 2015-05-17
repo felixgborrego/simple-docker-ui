@@ -82,6 +82,23 @@ object ContainerPage {
         }
       }
     }
+
+    def textCommands: Seq[(String, String)] = {
+      val id = StringUtils.subId(t.props.containerId)
+      t.state.tabSelected match {
+        case TabTerminal => Seq(
+          (s"docker attach $id", "Attach to the current container stdin"),
+          (s"docker exec -i -t $id bash", "Open a new bash session to the container")
+        )
+        case TabChanges => Seq(
+          (s"docker diff $id", "List the changed files and directories in a container᾿s filesystem")
+        )
+        case TabTop => Seq(
+          (s"docker top $id", "Display the running processes of a container")
+        )
+        case _ => Seq.empty
+      }
+    }
   }
 
 
@@ -184,7 +201,7 @@ object ContainerPageRender {
         ),
         <.div(^.className := "btn-group",
           if (state.info.exists(_.State.Running))
-            Button("Remove", "glyphicon-trash",disabled=true)(B.remove)
+            Button("Remove", "glyphicon-trash", disabled = true)(B.remove)
           else
             Button("Remove", "glyphicon-trash")(B.remove)
         )
@@ -220,6 +237,14 @@ object ContainerPageRender {
         (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
         (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
         (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
+      ),
+      <.div(^.className := "panel-footer",
+        B.textCommands.map { case (cmd, info) =>
+          <.div(
+            <.span(^.className := "glyphicon glyphicon-console pull-left"),
+            <.i(<.code(cmd), <.span(^.className := "small text-muted", info))
+          )
+        }
       )
     )
   }
