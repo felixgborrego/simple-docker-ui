@@ -7,6 +7,8 @@ import org.scalajs.dom.raw.WebSocket
 import ui.WorkbenchRef
 import ui.widgets.TerminalCard.TerminalInfo
 import ui.widgets._
+import util.StringUtils
+import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,11 +48,13 @@ object ContainerPage {
 
     def stop() =
       t.props.ref.client.get.stopContainer(t.props.containerId).map { info =>
+        sendEvent(EventCategory.Container, EventAction.Stop)
         refresh()
       }
 
     def start() =
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
+        sendEvent(EventCategory.Container, EventAction.Start)
         t.modState(s => s.copy(tabSelected = TabNone))
         refresh()
       }.recover {
@@ -82,7 +86,7 @@ object ContainerPage {
 
 
   def apply(containerId: String, ref: WorkbenchRef) = new Page {
-    val id = ContainersPage.id
+    val id = "Container"
 
     def component(ref: WorkbenchRef) = {
       val props = Props(ref, containerId)

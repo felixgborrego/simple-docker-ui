@@ -7,6 +7,7 @@ import model._
 import org.scalajs.dom
 import ui.WorkbenchRef
 import util.PullEventsCustomParser.EventStatus
+import util.googleAnalytics._
 
 object PullModalDialog {
 
@@ -43,6 +44,7 @@ object PullModalDialog {
 
     val RefreshMilliseconds = 1000
     def pullImage(): Unit = t.props.ref.client.map { client =>
+      sendEvent(EventCategory.Image, EventAction.Pull, "StartPull")
       val stream = client.pullImage(t.props.image.name)
       t.modState(s => s.copy(progress = s.progress.copy(running = true)))
       def refresh(): Unit = dom.setTimeout(() => {
@@ -52,6 +54,7 @@ object PullModalDialog {
         else {
           t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
           t.props.actionsBackend.imagePulled()
+          sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
         }
       }, RefreshMilliseconds)
       refresh()

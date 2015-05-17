@@ -8,6 +8,7 @@ import upickle._
 import util.EventsCustomParser
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
+import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -94,6 +95,7 @@ case class DockerClient(connection: Connection) {
     }
 
   def garbageCollectionImages(): Future[Seq[Image]] = {
+    sendEvent(EventCategory.Image, EventAction.GC)
     val usedImagesId: Future[Seq[String]] = for {
       containers <- containers(all = true)
       containersInfo <- Future.sequence(containers.map(container => containerInfo(container.Id)))
@@ -119,7 +121,6 @@ case class DockerClient(connection: Connection) {
         val noUsedImages = usedIds.foldLeft(all) {
           case (remaining, imageId) => filterUsed(remaining, imageId)
         }
-        val imagesUsed = all.diff(noUsedImages)
         noUsedImages.map(_.Id)
       }
 
@@ -130,6 +131,7 @@ case class DockerClient(connection: Connection) {
 
 
   def garbageCollectionContainers(): Future[ContainersInfo] = {
+    sendEvent(EventCategory.Container, EventAction.GC)
     containers(all = true).flatMap { all =>
       def delete(containers: List[Container]): Future[Unit] = containers match {
         case head :: tail => removeContainer(head.Id).andThen { case _ => delete(tail) }

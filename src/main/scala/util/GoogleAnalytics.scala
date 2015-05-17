@@ -12,7 +12,7 @@ object googleAnalytics {
 
   def sendAppView(name: String) = tracker.sendAppView(name)
 
-  def sendEvent(category: String, action: String, label: String) = tracker.sendEvent(category, action, label)
+  def sendEvent(category: String, action: String, label: String = "") = tracker.sendEvent(category, action, label)
 
   object interface extends js.GlobalScope {
 
@@ -37,6 +37,8 @@ object googleAnalytics {
   object EventCategory{
     val Connection = "Connection"
     val Save = "Save"
+    val Image = "Image"
+    val Container = "Container"
   }
 
   object EventAction {
@@ -45,6 +47,11 @@ object googleAnalytics {
     val Unable = "Unable"
     val InvalidVersion = "InvalidVersion"
     val Try = "Try"
+    val Pull = "Pull"
+    val GC = "GC"
+    val Show = "Show"
+    val Start = "Start"
+    val Stop = "Stop"
   }
 
 }

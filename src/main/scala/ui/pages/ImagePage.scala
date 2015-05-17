@@ -6,6 +6,7 @@ import model._
 import ui.WorkbenchRef
 import ui.widgets._
 import ui.widgets.dialogs.ContainerRequestForm
+import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,6 +37,7 @@ object ImagePage {
     }
 
     def showCreateDialog(): Future[Unit] = Future {
+      sendEvent(EventCategory.Image, EventAction.Show, "CreateDialog")
       t.modState(_.copy(showCreateDialog = true))
     }
 
@@ -46,6 +48,7 @@ object ImagePage {
 
     override def newContainerCreated(containerId: String) = {
       log.info(s"Container created $containerId")
+      sendEvent(EventCategory.Image, EventAction.Start)
       t.props.ref.show(ContainerPage(containerId, t.props.ref))
     }
   }
