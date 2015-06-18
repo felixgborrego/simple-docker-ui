@@ -166,7 +166,7 @@ object SettingsPageRender {
                   <.h3("Linux without systemd:"),
                   <.ul(
                     <.li("Edit ", <.code("/etc/default/docker"), " to allow connections adding:", <.br(),
-                      <.code("DOCKER_OPTS='-H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock'")
+                      <.code("DOCKER_OPTS='-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock'")
                     ),
                     <.li("Restart the Docker service using:", <.br(),
                       <.code("sudo service docker restart")
