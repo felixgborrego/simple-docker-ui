@@ -51,6 +51,7 @@ object googleAnalytics {
     val GC = "GC"
     val Show = "Show"
     val Start = "Start"
+    val Remove = "Remove"
     val Stop = "Stop"
   }
 

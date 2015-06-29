@@ -89,10 +89,11 @@ case class DockerClient(connection: Connection) {
   def removeImage(imageId: String): Future[Unit] =
     Ajax.delete(s"$url/images/$imageId", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.removeImage] return: " + xhr.readyState)
-    }.recover {
+    }.transform(identity, ex => ex match {
       case ex: AjaxException =>
         log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
-    }
+        new Exception(ex.xhr.responseText)
+    })
 
   def garbageCollectionImages(): Future[Seq[Image]] = {
     sendEvent(EventCategory.Image, EventAction.GC)
@@ -101,7 +102,7 @@ case class DockerClient(connection: Connection) {
       containersInfo <- Future.sequence(containers.map(container => containerInfo(container.Id)))
     } yield containersInfo.map(_.Image)
 
-    // process the tree removing any used Image and his parents
+    // process the tree removing any used Image and its parents
     def filterUsed(images: Seq[Image], imageId: String): Seq[Image] = {
       val imageFound = images.filter(_.Id == imageId)
       val remainingImages = images.diff(imageFound)

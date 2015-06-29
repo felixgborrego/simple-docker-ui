@@ -25,7 +25,7 @@ object Button {
 
     def click() = {
       t.modState(s => s.copy(running = true))
-      t.props.command().map { _ =>
+      t.props.command().andThen { case _ =>
         t.modState(s => s.copy(running = false))
       }
     }
