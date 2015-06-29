@@ -23,20 +23,16 @@ case class DockerMetadata(connection: Connection,
 }
 
 case class Info(Containers: Int,
-                Debug: Int,
                 Driver: String,
                 ExecutionDriver: String,
-                IPv4Forwarding: Int,
                 Images: Int,
                 IndexServerAddress: String,
                 InitPath: String,
                 KernelVersion: String,
                 MemTotal: Float,
-                MemoryLimit: Int,
                 NEventsListener: Int,
                 NGoroutines: Int,
-                OperatingSystem: String,
-                SwapLimit: Int)
+                OperatingSystem: String)
 
 case class Version(ApiVersion: String,
                    Arch: String,
@@ -58,8 +54,8 @@ case class Container(Command: String,
                      Image: String,
                      Status: String,
                      Names: Seq[String],
-                     SizeRootFs: Int,
-                     SizeRw: Int,
+                     SizeRootFs: Int = 0,
+                     SizeRw: Int = 0,
                      Ports: Seq[Port]) {
   def id = subId(Id)
 
