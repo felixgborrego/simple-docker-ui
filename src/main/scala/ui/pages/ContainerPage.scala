@@ -103,7 +103,7 @@ object ContainerPage {
 
 
   def apply(containerId: String, ref: WorkbenchRef) = new Page {
-    val id = "Container"
+    val id = ContainersPage.id
 
     def component(ref: WorkbenchRef) = {
       val props = Props(ref, containerId)
