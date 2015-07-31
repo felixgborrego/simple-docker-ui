@@ -179,7 +179,7 @@ case class DockerClient(connection: Connection) {
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
   private def containers(all: Boolean): Future[Seq[Container]] =
-    Ajax.get(s"$url/containers/json?all=$all&size=true", timeout = HttpTimeOut).map { xhr =>
+    Ajax.get(s"$url/containers/json?all=$all", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.containers]")
       read[Seq[Container]](xhr.responseText)
     }
