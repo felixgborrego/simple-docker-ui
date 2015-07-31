@@ -196,7 +196,7 @@ object ContainerPageRender {
               if (info.State.Running)
                 Button("Stop", "glyphicon-stop")(B.stop)
               else
-                Button("Star", "glyphicon-play")(B.start)
+                Button("Start", "glyphicon-play")(B.start)
           }
         ),
         <.div(^.className := "btn-group",
