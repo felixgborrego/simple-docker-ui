@@ -122,7 +122,7 @@ object PullModalDialogRender {
             P.image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
             (P.image.star_count == 0) ?= <.div(^.className := "pull-right", <.i(^.className := "glyphicon glyphicon-star-empty"), P.image.star_count),
             (P.image.star_count > 0) ?= <.div(^.className := "pull-right", <.i(^.className := "glyphicon glyphicon-star"), P.image.star_count),
-            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"https://registry.hub.docker.com/search?q=${P.image.name}&searchfield:=")("View in Docker.com")
+            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"https://hub.docker.com/search/?q=${P.image.name}&searchfield:=")("View in Docker.com")
 
           )
         )
