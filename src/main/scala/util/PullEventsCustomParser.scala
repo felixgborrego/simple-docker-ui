@@ -1,7 +1,7 @@
 package util
 
 import model._
-import upickle._
+import upickle.default._
 import util.StringUtils._
 
 import scala.collection.mutable.ArrayBuffer

@@ -1,5 +1,5 @@
 
-scalaVersion in ThisBuild := "2.11.6"
+scalaVersion in ThisBuild := "2.11.7"
 
 lazy val root = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
@@ -12,8 +12,8 @@ lazy val root = project.in(file("."))
       "-Xfatal-warnings"
     ),
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % "0.2.8",
-      "org.scala-js" %%% "scalajs-dom" % "0.8.0" withSources() withJavadoc(),
+      "com.lihaoyi" %%% "upickle" % "0.3.4",
+      "org.scala-js" %%% "scalajs-dom" % "0.8.1" withSources() withJavadoc(),
       "be.doeraene" %%% "scalajs-jquery" % "0.8.0",
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.3"
     ),

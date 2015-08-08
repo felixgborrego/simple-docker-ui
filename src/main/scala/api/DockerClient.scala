@@ -4,7 +4,7 @@ import api.DockerClientConfig.APIRequired._
 import model._
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
-import upickle._
+import upickle.default._
 import util.EventsCustomParser
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
