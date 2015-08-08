@@ -28,6 +28,8 @@ object ContainerRequestForm {
 
   case class Props(actionsBackend: ActionsBackend, image: Image, initialConfig: ContainerConfig, ref: WorkbenchRef) {
     def imageName = image.RepoTags.headOption.getOrElse(image.Id)
+
+    val hasExposedPorts = !initialConfig.exposedPorts.isEmpty
   }
 
   case class Backend(t: BackendScope[Props, State]) {
@@ -195,7 +197,7 @@ object ContainerRequestFormRender {
                     ^.value := S.cmdText, ^.onChange ==> B.updateCmd)
                 )
               ),
-              <.div(^.className := "form-group",
+              P.hasExposedPorts ?= <.div(^.className := "form-group",
                 <.label(^.className := "col-xs-3 control-label", "Ports"),
                 <.div(^.className := "col-xs-9 btn-group", data_toggle := "buttons",
                   <.label(^.onClick --> B.portsMapping(AllPorts), ^.className := "btn btn-primary  active", <.input(^.`type` := "radio", ^.className := "publicPorts", ^.name := "ports"), "All"),
