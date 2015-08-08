@@ -47,13 +47,15 @@ case class DockerClient(connection: Connection) {
     test <- ping()
     info <- info()
     version <- version()
-    containers <- containers(all = false)
+    containers <- containers(all = false, extraInfo = false)
   } yield DockerMetadata(connection, info, version, containers)
 
+  def containersRunningWithExtraInfo(): Future[Seq[Container]] =
+    containers(all = false, extraInfo = true)
 
   def containersInfo(): Future[ContainersInfo] = for {
-    r <- containers(all = false)
-    all <- containers(all = true)
+    r <- containers(all = false, extraInfo = false)
+    all <- containers(all = true, extraInfo = false)
   } yield ContainersInfo(r, all)
 
 
@@ -98,7 +100,7 @@ case class DockerClient(connection: Connection) {
   def garbageCollectionImages(): Future[Seq[Image]] = {
     sendEvent(EventCategory.Image, EventAction.GC)
     val usedImagesId: Future[Seq[String]] = for {
-      containers <- containers(all = true)
+      containers <- containers(all = true, extraInfo = false)
       containersInfo <- Future.sequence(containers.map(container => containerInfo(container.Id)))
     } yield containersInfo.map(_.Image)
 
@@ -133,7 +135,7 @@ case class DockerClient(connection: Connection) {
 
   def garbageCollectionContainers(): Future[ContainersInfo] = {
     sendEvent(EventCategory.Container, EventAction.GC)
-    containers(all = true).flatMap { all =>
+    containers(all = true, extraInfo = false).flatMap { all =>
       def delete(containers: List[Container]): Future[Unit] = containers match {
         case head :: tail => removeContainer(head.Id).andThen { case _ => delete(tail) }
         case Nil => Future.successful(())
@@ -178,9 +180,10 @@ case class DockerClient(connection: Connection) {
     }
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
-  private def containers(all: Boolean): Future[Seq[Container]] =
-    Ajax.get(s"$url/containers/json?all=$all&size=true", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.containers]")
+  // Note: gather extraInfo is slower (ex: SizeRootFs, SizeRw).
+  private def containers(all: Boolean, extraInfo: Boolean): Future[Seq[Container]] =
+    Ajax.get(s"$url/containers/json?all=$all&size=$extraInfo", timeout = HttpTimeOut).map { xhr =>
+      log.info(s"[dockerClient.containers]")
       read[Seq[Container]](xhr.responseText)
     }
 

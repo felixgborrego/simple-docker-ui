@@ -29,6 +29,7 @@ case object HomePage extends Page {
         client.metadata().map { info =>
           t.modState(s => s.copy(info = Some(info), error = None))
           loadEvents()
+          loadContainersSize(info)
         }.onFailure {
           case ex: Exception =>
             log.error("HomePage", "Unable to get Metadata", ex)
@@ -40,6 +41,13 @@ case object HomePage extends Page {
             }
         }
 
+      def loadContainersSize(info: DockerMetadata) =
+        client.containersRunningWithExtraInfo.map { containers =>
+          t.modState { s =>
+            s.copy(info = Some(info.copy(containers = containers)))
+          }
+        }
+      
       def loadEvents() = {
         val stream = client.events { events => //streaming
           t.modState(s => s.copy(events = events))
