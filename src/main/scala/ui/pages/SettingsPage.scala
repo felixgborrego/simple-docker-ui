@@ -135,6 +135,20 @@ object SettingsPageRender {
           ),
           <.div(^.className := "panel panel-default",
             <.div(^.className := "panel-heading",
+              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-windows"), " Windows config")
+            ),
+            <.div(^.className := "list-group",
+              <.div(^.className := "list-group-item",
+                <.p(^.className := "list-group-item-text",
+                  "Docker Remote API use authentication base on certificates, to connect we need either " +
+                    "to disable TLS or to allow Chrome to use these certificates."),
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/windows", ^.target := "_blank",
+                  "For more info about how to connect check the Wiki")
+              )
+            )
+          ),
+          <.div(^.className := "panel panel-default",
+            <.div(^.className := "panel-heading",
               <.h3(^.className := "panel-title", <.i(^.className := "fa fa-linux"), " Linux config")
             ),
             <.div(^.className := "list-group",
@@ -176,28 +190,6 @@ object SettingsPageRender {
                   ),
                   <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
                 )
-              )
-            )
-          ),
-          <.div(^.className := "panel panel-default",
-            <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-windows"), " Windows config")
-            ),
-            <.div(^.className := "list-group",
-              <.div(^.className := "list-group-item",
-                <.p(^.className := "list-group-item-text",
-                  "The easiest way to connect to Docker Remote API is by disabling TLS.", "To do so, you need to:",
-                  <.ul(
-                    <.li("Log into the boot2docker virtual machine: ", <.code("boot2docker ssh")),
-                    <.li("Add ", <.code("DOCKER_TLS=no"), " to the file ", <.code("/var/lib/boot2docker/profile"), " (may not exist)", <.br(),
-                      <.code("echo \"DOCKER_TLS=no\" | sudo tee /var/lib/boot2docker/profile")
-                    ),
-                    <.li("Restart boot2docker", <.br(), <.code("boot2docker down"),<.br(), <.code("boot2docker up")),
-                    <.li("Open your browser and verify you can connect to http://192.168.59.103:2375/_ping"),
-                    <.li("Try to reconnect! using http://192.168.59.103:2375")
-                  )
-                ),
-                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
               )
             )
           )
