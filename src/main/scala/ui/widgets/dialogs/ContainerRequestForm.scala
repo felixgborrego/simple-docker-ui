@@ -163,8 +163,11 @@ object ContainerRequestForm {
 
       task.onFailure {
         case ex: AjaxException =>
-          log.error("ImagesPage", "Unable to get Metadata", ex)
+          log.error("ImagesPage", "Unable to Start", ex)
           t.modState(s => s.copy(warnings = Seq(ex.xhr.responseText)))
+        case ex: Exception =>
+          log.error("ImagesPage", "Unable to Start", ex)
+          t.modState(s => s.copy(warnings = Seq(ex.getMessage)))
       }
     }
 
