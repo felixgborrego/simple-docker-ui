@@ -73,7 +73,8 @@ object ImagesPage extends Page {
       }.onFailure {
         case ex: AjaxException =>
           log.error("ImagesPage", "Unable to get Metadata", ex)
-          t.modState(s => s.copy(error = Some(s"Unable to connect"), searching = false))
+          val error = ex.xhr.responseText.take(300)
+          t.modState(s => s.copy(error = Some(s"Unable to connect - $error"), searching = false))
       }
     }
 
