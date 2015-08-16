@@ -131,3 +131,9 @@ code {
   table-layout: fixed;
   word-wrap: break-word;
 }
+
+.panel-config {
+  background-color: whitesmoke;
+}
+
+}

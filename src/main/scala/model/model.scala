@@ -112,13 +112,14 @@ case class ContainerConfig(AttachStderr: Boolean = false,
                            Tty: Boolean = false,
                            User: String = "",
                            WorkingDir: String = "",
+                           Volumes: Map[String, VolumeEmptyHolder] = Map.empty,
                            ExposedPorts: Map[String, NetworkSettingsPort] = Map.empty) {
 
   // Workaround, Docker may return null
   val cmd = Option(Cmd).getOrElse(Seq.empty)
   val env = Option(Env).getOrElse(Seq.empty)
   val exposedPorts = Option(ExposedPorts).getOrElse(Map.empty)
-
+  val volumes = Option(Volumes).getOrElse(Map.empty)
   val portBindings = exposedPorts.map { case (containerPort, hostInfo) => (containerPort, Seq(hostInfo)) }
 }
 
@@ -228,12 +229,19 @@ case class CreateContainerRequest(AttachStdin: Boolean,
                                   Image: String,
                                   Tty: Boolean,
                                   HostConfig: HostConfig,
+                                  Volumes: Map[String, VolumeEmptyHolder] = Map.empty[String, VolumeEmptyHolder],
+                                  VolumesRW: Map[String, Boolean] = Map.empty[String, Boolean],
                                   ExposedPorts: Map[String, NetworkSettingsPort] = Map.empty[String, NetworkSettingsPort],
+                                  Env: Seq[String] = Seq.empty,
                                   name: String) {
   val cmd = Option(Cmd).getOrElse(Seq.empty)
 }
 
+case class VolumeEmptyHolder(info: Option[String] = None)
+
+// HostConfig for https://docs.docker.com/reference/api/docker_remote_api_v1.17/#create-a-container
 case class HostConfig(PublishAllPorts: Boolean,
+                      Binds: Seq[String],
                       PortBindings: Map[String, Seq[NetworkSettingsPort]] = Map.empty)
 
 case class CreateContainerResponse(Id: String, Warnings: Seq[String])
