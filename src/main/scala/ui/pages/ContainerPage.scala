@@ -234,11 +234,13 @@ object ContainerPageRender {
             <.a(^.onClick --> B.showTab(TabChanges), <.i(^.className := "fa fa-history"), " File system changes")
           )
         ),
-        (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
-        (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
-        (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
+        <.div(^.className := "panel-body panel-config",
+          (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
+          (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
+          (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
+        )
       ),
-      <.div(^.className := "panel-footer",
+      <.div(^.className := "panel-footer docker-cli",
         B.textCommands.map { case (cmd, info) =>
           <.div(
             <.span(^.className := "glyphicon glyphicon-console pull-left"),

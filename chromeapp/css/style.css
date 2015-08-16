@@ -136,4 +136,7 @@ code {
   background-color: whitesmoke;
 }
 
+.docker-cli{
+  text-align: left;
+  word-break: break-all;
 }
