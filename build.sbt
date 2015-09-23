@@ -12,7 +12,7 @@ lazy val root = project.in(file("."))
       "-Xfatal-warnings"
     ),
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % "0.3.4",
+      "com.lihaoyi" %%% "upickle" % "0.3.6",
       "org.scala-js" %%% "scalajs-dom" % "0.8.1" withSources() withJavadoc(),
       "be.doeraene" %%% "scalajs-jquery" % "0.8.0",
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.8.3"

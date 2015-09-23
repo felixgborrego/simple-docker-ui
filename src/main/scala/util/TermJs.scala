@@ -10,6 +10,7 @@ import scala.scalajs.js.annotation.JSName
 object termJs {
 
   @JSName("Terminal")
+  @js.native
   class Terminal(options: Object) extends Object {
 
     def open(element: Element): Unit = js.native
