@@ -5,12 +5,12 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 
 object TableCard {
 
-  case class Props(data: Seq[Map[String, String]]) {
+  case class Props(data: Seq[Map[String, String]], columnWidth: Map[String, String]) {
     lazy val keys = data.headOption.map(_.keys.toSeq).getOrElse(Seq.empty)
   }
 
-  def apply(data: Seq[Map[String, String]]) = {
-    val props = new Props(data)
+  def apply(data: Seq[Map[String, String]], columnWidth: (String, String)*) = {
+    val props = new Props(data, columnWidth.toMap)
     TableCardRender.component(props)
   }
 }
@@ -27,7 +27,9 @@ object TableCardRender {
     <.div(^.className := "table-responsive",
       <.table(^.className := "table table-hover table-striped table-condensed",
         <.thead(
-          <.tr(props.keys.map(<.th(_)))
+          <.tr(props.keys.map(key =>
+            <.th(^.className := props.columnWidth.get(key))(key)
+          ))
         ),
         <.tbody(
           props.data.map { row =>

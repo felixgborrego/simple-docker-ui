@@ -135,7 +135,7 @@ object ImagePageRender {
 
 
   def vdomHistory(history: Seq[ImageHistory]): ReactElement = {
-    val values = history.map(row => Map("Created" -> row.created, "Id" -> row.id, "Size" -> row.size, "Created By" -> row.CreatedBy))
+    val values = history.map(row => Map( "Created By" -> row.CreatedBy, "Id" -> row.id, "Size" -> row.size, "Created" -> row.created))
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
@@ -143,7 +143,7 @@ object ImagePageRender {
             <.i(^.className := "fa fa-history"), " Creation History"
           )
         ),
-        TableCard(values)
+        TableCard(values, "Created" -> "col-sm-2", "Size" -> "col-sm-2")
       )
     )
 
