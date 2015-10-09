@@ -19,7 +19,7 @@ case class DockerMetadata(connection: Connection,
                           version: Version,
                           containers: Seq[Container]) {
 
-  def totalContainersSize = bytesToSize(containers.map(c => c.SizeRootFs.toLong + c.SizeRw.toLong).sum)
+  def totalContainersSize = bytesToSize(containers.map(c => c.sizeRootFs + c.sizeRw).sum)
 }
 
 case class Info(Containers: Int,
@@ -47,17 +47,19 @@ case class Version(ApiVersion: String,
   }
 }
 
-
 case class Container(Command: String,
                      Created: Int,
                      Id: String,
                      Image: String,
                      Status: String,
                      Names: Seq[String],
-                     SizeRootFs: Int = 0,
-                     SizeRw: Int = 0,
+                     SizeRootFs: Option[Int] = None,
+                     SizeRw: Option[Int] = None,
                      Ports: Seq[Port]) {
   def id = subId(Id)
+
+  val sizeRootFs = SizeRootFs.getOrElse(0).toLong
+  val sizeRw = SizeRw.getOrElse(0).toLong
 
   def created = {
     val timeStamp = Created.toLong * 1000L
