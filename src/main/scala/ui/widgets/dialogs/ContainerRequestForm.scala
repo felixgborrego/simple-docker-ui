@@ -8,6 +8,7 @@ import org.scalajs.dom.ext.AjaxException
 import ui.WorkbenchRef
 import ui.pages.{SettingsPage, ImagesPage, ContainersPage, HomePage}
 import ui.widgets.Alert
+import util.CopyPasteUtil
 import util.StringUtils._
 import util.collections._
 import util.logger._
@@ -287,7 +288,8 @@ object ContainerRequestFormRender {
             )
           ),
           <.div(^.className := "modal-footer docker-cli",
-            <.i(^.className := "glyphicon glyphicon-console pull-left", <.code(B.textCommand))
+            <.i(^.className := "glyphicon glyphicon-console pull-left", <.code(^.className:= "docker-cli-text")(B.textCommand)),
+            <.a(^.onClick --> CopyPasteUtil.copyToClipboard("docker-cli-text"), " ", <.i(^.className := "fa fa-clipboard"))
           )
         )
       )

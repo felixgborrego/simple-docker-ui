@@ -7,9 +7,9 @@ import org.scalajs.dom.raw.WebSocket
 import ui.WorkbenchRef
 import ui.widgets.TerminalCard.TerminalInfo
 import ui.widgets._
-import util.StringUtils
 import util.googleAnalytics._
 import util.logger._
+import util.{CopyPasteUtil, StringUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -242,9 +242,11 @@ object ContainerPageRender {
       ),
       <.div(^.className := "panel-footer docker-cli",
         B.textCommands.map { case (cmd, info) =>
+          val cmdName = info.split(" ").head
           <.div(
             <.span(^.className := "glyphicon glyphicon-console pull-left"),
-            <.i(<.code(cmd), <.span(^.className := "small text-muted", info))
+            <.i(<.code(^.className := cmdName)(cmd), <.span(^.className := "small text-muted", info)),
+            <.a(^.onClick --> CopyPasteUtil.copyToClipboard(cmdName)," ", <.i(^.className := "fa fa-clipboard"))
           )
         }
       )
