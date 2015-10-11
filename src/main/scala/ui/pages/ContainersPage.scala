@@ -70,15 +70,15 @@ object ContainersPageRender {
               "Removes all unused containers, keeping the 10 recent once")(B.garbageCollection)
           )
         ),
-        <.table(^.className := "table table-hover table-striped",
+        <.table(^.className := "table table-hover table-striped break-text",
           <.thead(
             <.tr(
-              <.th("Id"),
-              <.th("Image"),
-              <.th("Command"),
-              <.th("Ports"),
-              <.th("Created"),
-              <.th("Status")
+              <.th("Id", ^.className:="col-xs-1"),
+              <.th("Image",^.className:="col-xs-2"),
+              <.th("Command",^.className:="col-xs-4"),
+              <.th("Ports",^.className:="col-xs-2"),
+              <.th("Created",^.className:="col-xs-2"),
+              <.th("Status",^.className:="col-xs-1")
             )
           ),
           <.tbody(

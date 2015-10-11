@@ -123,9 +123,6 @@ code {
   margin-left: 8px;
 }
 
-.btn {
-  padding: 2px 10px;
-}
 
 .fixed-table{
   table-layout: fixed;
@@ -139,4 +136,17 @@ code {
 .docker-cli{
   text-align: left;
   word-break: break-all;
+}
+
+.break-text {
+    word-break: break-all;
+}
+
+.navbar-right-margin {
+    margin-right: 2px;
+}
+
+.add-button-settings {
+    margin-top: 2px;
+    width: 39px;
 }

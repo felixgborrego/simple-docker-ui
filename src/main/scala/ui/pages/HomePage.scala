@@ -35,7 +35,7 @@ case object HomePage extends Page {
             log.error("HomePage", "Unable to get Metadata", ex)
             ConfigStorage.isRunningBoot2Docker.map {
               case false => s"Unable to connect to ${t.props.url}, is Docker daemon running?"
-              case true => s"Unable to connect to ${t.props.url}, is Boot2docker running?"
+              case true => s"Unable to connect to ${t.props.url}, is Boot2docker/docker-machine running?"
             }.map { msg =>
               t.modState(s => s.copy(error = Some(msg)))
             }

@@ -19,7 +19,7 @@ object Button {
       if (t.state.running)
         "glyphicon glyphicon-refresh glyphicon-spin"
       else
-        "glyphicon glyphicon " + t.props.icon
+        "glyphicon " + t.props.icon
 
     def text = if (t.state.running) "" else " " + t.props.text
 
