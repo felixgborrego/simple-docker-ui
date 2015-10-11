@@ -142,6 +142,10 @@ code {
     word-break: break-all;
 }
 
+.break-by-word {
+    word-break: break-word;
+ }
+
 .navbar-right-margin {
     margin-right: 2px;
 }

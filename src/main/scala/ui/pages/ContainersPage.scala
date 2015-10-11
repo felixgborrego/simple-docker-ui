@@ -73,12 +73,12 @@ object ContainersPageRender {
         <.table(^.className := "table table-hover table-striped break-text",
           <.thead(
             <.tr(
-              <.th("Id", ^.className:="col-xs-1"),
-              <.th("Image",^.className:="col-xs-2"),
-              <.th("Command",^.className:="col-xs-4"),
-              <.th("Ports",^.className:="col-xs-2"),
-              <.th("Created",^.className:="col-xs-2"),
-              <.th("Status",^.className:="col-xs-1")
+              <.th("Id", ^.className:="col-xs-2 col-sm-2 col-md-2"),
+              <.th("Image",^.className:="col-xs-4 col-sm-3 col-md-3"),
+              <.th("Command",^.className:="hidden-xs hidden-sm col-md-2"),
+              <.th("Ports",^.className:="hidden-xs col-sm-2 col-md-2"),
+              <.th("Created",^.className:="col-xs-2 col-sm-2 col-md-2"),
+              <.th("Status",^.className:="col-xs-4 col-sm-3 col-md-2")
             )
           ),
           <.tbody(
@@ -86,10 +86,10 @@ object ContainersPageRender {
               <.tr(
                 <.td(props.ref.link(ContainerPage(c.Id, props.ref))(c.id)),
                 <.td(c.Image),
-                <.td(c.Command),
-                <.td(c.ports.map(<.div(_))),
-                <.td(c.created),
-                <.td(c.Status)
+                <.td(^.className:="hidden-xs hidden-sm",c.Command),
+                <.td(^.className:="hidden-xs", c.ports.map(<.div(_))),
+                <.td(^.className:="break-by-word", c.created),
+                <.td(^.className:="break-by-word", c.Status)
               )
             }
           )
