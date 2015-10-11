@@ -14,6 +14,7 @@ object ConfigStorage {
   val DefaultLinuxUrl = "http://localhost:2375"
   val DefaultWinUrl = "http://192.168.59.103:2375"
   val ParamUrlConnection = "url"
+  val ParamSavedUrlConnection ="saved_urls"
 
   def saveConnection(url: String) = save(ParamUrlConnection, url)
 
@@ -63,4 +64,14 @@ object ConfigStorage {
     }
     p.future
   }
+
+  // Return the list of url already used
+  val Separator = "!;!"
+  def savedUrls(): Future[Seq[String]] = get(ParamSavedUrlConnection)
+    .map(_.split(Separator).toSeq)
+    .recover {
+      case ex:Exception => Seq.empty
+    }
+
+  def saveUrls(urls:Seq[String]) = save(ParamSavedUrlConnection,urls.mkString(Separator))
 }

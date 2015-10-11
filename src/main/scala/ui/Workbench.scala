@@ -12,10 +12,11 @@ import util.googleAnalytics._
 import util.logger.log
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object Workbench {
 
-  case class State(selectedPage: Option[Page], connection: Option[Connection])
+  case class State(selectedPage: Option[Page], connection: Option[Connection], savedConnections: Seq[Connection])
 
   case class Props(pages: Set[Page])
 
@@ -28,8 +29,11 @@ object Workbench {
 
     def componentWillMount() = connectSavedConnection()
 
-    def connectSavedConnection(): Unit = ConfigStorage.urlConnection.map { connection =>
-      t.modState(_.copy(connection = connection))
+    def connectSavedConnection(): Unit = for {
+      connection <- ConfigStorage.urlConnection
+      savedUrls <- ConfigStorage.savedUrls()
+    } yield {
+      t.modState(_.copy(connection = connection, savedConnections = savedUrls.map(Connection)))
       connection match {
         case Some(url) =>
           sendEvent(EventCategory.Connection, EventAction.Connected, "SavedConnection")
@@ -49,10 +53,13 @@ object Workbench {
       test.onFailure { case _ => show(SettingsPage) }
     }
 
-    def reconnect(): Unit =
-      ConfigStorage.urlConnection.map { connection =>
+    def reconnect(): Future[Unit] = for {
+      connection <- ConfigStorage.urlConnection
+      savedUrls <- ConfigStorage.savedUrls()
+    } yield {
         log.info(s"workbench reconnected to $connection")
-        t.modState(s => s.copy(connection = connection))
+        val savedConnections = savedUrls.map(Connection)
+        t.modState(s => s.copy(connection = connection, savedConnections = savedConnections))
       }
   }
 
@@ -68,7 +75,7 @@ object WorkbenchRender {
   import Workbench._
 
   val component = ReactComponentB[Props]("Workbench")
-    .initialState(State(None, None))
+    .initialState(State(None, None, Nil))
     .backend(new Backend(_))
     .render((P, S, B) => vdom(S, B))
     .componentWillMount(_.backend.componentWillMount())

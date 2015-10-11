@@ -1,69 +1,108 @@
 package ui.pages
 
+import java.util.UUID
+
 import api.{ConfigStorage, DockerClient, DockerClientConfig}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
-import model._
 import ui.WorkbenchRef
-import ui.widgets.Alert
+import ui.pages.SettingsPageModel._
+import ui.widgets.{Alert, Button}
 import util.googleAnalytics._
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object SettingsPage extends Page {
 
   val id = "Settings"
 
   case class Props(ref: WorkbenchRef)
-
-  case class State(url: String = "", error: Option[String] = None)
+  case class State(info: Info, error: Option[String] = None)
 
   case class Backend(t: BackendScope[Props, State]) {
-    def onChange(e: ReactEventI) =
-      t.modState(_.copy(url = e.target.value))
+    def onChange(connection: Connection)(e: ReactEventI) = {
+      val newValue = connection.copy(url = e.target.value)
+      t.modState(s => s.copy(info = s.info.replace(connection, newValue)))
+    }
 
     def willMount(): Unit = {
-      t.props.ref.connection match {
+      loadSelectedUrl()
+    }
+
+    def loadSelectedUrl(): Unit = {
+      val selectedUrlFut = t.props.ref.connection match {
         case None =>
-          ConfigStorage.defaultUrl.map { url =>
-            t.modState(_.copy(url = url, Some("There is no connection configuration")))
+          t.modState(s => s.copy(error = Some("There is no connection configuration")))
+          ConfigStorage.defaultUrl
+        case Some(connection) => Future.successful(connection.url)
+      }
+
+      val savedUrlsFut = ConfigStorage.savedUrls()
+
+      for {
+        urlSelected <- selectedUrlFut
+        savedUrls <- savedUrlsFut
+      } yield {
+        val connections = savedUrls.map(Connection(_, ConnectionNoVerified)).toList
+        val info = Info(connections).select(urlSelected)
+        t.modState(_.copy(info = info))
+        check(reconnect = false)
+      }
+    }
+
+    def save() = check(reconnect = true)
+
+    def check(reconnect: Boolean): Future[Unit] = {
+      val info = t.state.info
+      Future.sequence(info.connections.map(verifyConnection)).map { _ =>
+        t.modState { state =>
+          state.info.selected match {
+            case None =>
+              log.info("No url selected")
+              state
+            case Some(selected) if selected.isValid =>
+              sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
+              if (reconnect) for {
+                _ <- ConfigStorage.saveUrls(info.connections.map(_.url))
+                _ <- ConfigStorage.saveConnection(selected.url)
+              } yield t.props.ref.reconnect()
+              state.copy(error = None)
+            case Some(connection) =>
+              sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
+              log.info("Invalid urls")
+              state.copy(error = Some(s"Unable to connected to the selected url '${connection.url}'"))
           }
-        case Some(c) =>
-          t.modState(s => s.copy(c.url, None))
-          check(c.url, reconnect = false)
+        }
       }
     }
 
-    def check(url: String, reconnect: Boolean): Unit = {
-
-      DockerClient(Connection(url)).checkVersion().map {
-        case true =>
-          sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
-          t.modState(s => State(url, None))
-          if (reconnect) ConfigStorage.saveConnection(url).map(_ => t.props.ref.reconnect())
-        case false =>
-          sendEvent(EventCategory.Connection, EventAction.InvalidVersion, "Settings")
-          t.modState(s => s.copy(url, Some(
-            s"""There is connection but Docker UI requires a newer version.
-               |Minimum Remote API supported is ${DockerClientConfig.DockerVersion}""".stripMargin)))
-      }.onFailure {
-        case ex: Exception =>
-          log.info(s"Unable to connected to $url")
-          t.modState(s => s.copy
-            (url, Some(s"Unable to connected to $url")))
+    def verifyConnection(connection: Connection): Future[Unit] =
+      connection.checkConnection().map { c =>
+        t.modState { s =>
+          s.copy(info = s.info.replace(connection, c))
+        }
       }
+
+
+    def isSelected(connection: Connection) = t.state.info.selected == Some(connection)
+
+    def selectConnection(connection: Connection)(e: ReactEventI) = {
+      val info = t.state.info.select(connection.url)
+      t.modState(_.copy(info = info), { () =>
+        info.selected.map(verifyConnection)
+        log.debug(s"selected: ${info.selected}")
+      })
     }
 
-    def save(): Unit = {
-      val url = t.state.url
-      if (url.startsWith("http")) {
-        check(url, reconnect = true)
-      } else {
-        sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
-        log.info(s"Invalid $url")
-      }
+    def showAddConnection = !t.state.info.connections.map(_.url).contains("")
+
+    def addConnection() = t.modState { s =>
+      val info = s.info.select("")
+      s.copy(info = info)
     }
+
   }
 
   def component(ref: WorkbenchRef) = {
@@ -78,7 +117,7 @@ object SettingsPageRender {
   import SettingsPage._
 
   def component = ReactComponentB[Props]("SettingsPage")
-    .initialState(State())
+    .initialState(State(Info()))
     .backend(new Backend(_))
     .render((P, S, B) => {
     vdom(S, B)
@@ -93,111 +132,133 @@ object SettingsPageRender {
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug"), " Connection to Docker Remote Api"),
           <.div(^.className := "btn-group pull-right",
-            <.button(^.className := "btn btn-success", ^.onClick --> B.save,
-              <.i(^.className := "fa fa-check", "Save")
-            )
+            Button("Save", "fa fa-check", "Verify and Save connections")(B.save)
           )
         ),
         <.div(^.className := "modal-body",
           <.form(^.className := "form-horizontal",
-            <.div(^.className := "form-group",
-              <.label(^.className := "col-xs-3 control-label", "Url", <.br(), <.small()),
-              <.div(^.className := "col-xs-9",
-                <.input(^.`type` := "text", ^.className := "form-control", ^.value := S.url, ^.onChange ==> B.onChange
-                )
+            S.info.connections.map { connection =>
+              <.div(^.className := "input-group",
+                (S.info.showSelect) ?= <.span(^.className := "input-group-addon",
+                  <.input(^.`type` := "radio", ^.name := "selected",
+                    ^.checked := B.isSelected(connection), ^.onChange ==> B.selectConnection(connection))
+                ),
+                <.input(^.`type` := "text", ^.className := "form-control", ^.value := connection.url, ^.onChange ==> B.onChange(connection)),
+                <.span(^.className := "input-group-btn",
+                  Button("Verify!", connection.stateIcon, "Verify connection")(B.verifyConnection(connection))
+                ),
+                (!connection.stateMessage.isEmpty) ?= <.span(^.className := "input-group-addon", <.i(connection.stateMessage))
               )
+            },
+            B.showAddConnection ?= <.button(^.className := "btn btn-success add-button-settings", ^.onClick --> B.addConnection(),
+              <.i(^.className := "fa fa-plus")
             )
-          ),
-          <.div(^.className := "panel panel-default",
-            <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-apple"), " Mac OS X config")
-            ),
-            <.div(^.className := "list-group",
-              <.div(^.className := "list-group-item",
-                <.p(^.className := "list-group-item-text",
-                  "By default Boot2Docker runs Docker with TLS enabled. It auto-generates certificates and copies them to ~/.boot2docker/certs. To allow Docker UI to connect to Docker Remote API, first we need to install and allow Chrome to use those credentials.",
-                  <.ul(
-                    <.li("First, to make Chrome trust in the auto-generated CA. Execute this command to add the new CA to your Certificate Trust Settings in your Keychain:", <.br(),
-                      <.code("security add-trusted-cert -k ~/Library/Keychains/login.keychain  ~/.boot2docker/certs/boot2docker-vm/ca.pem")
-                    ),
-                    <.li("Also, you need to add the auto-generated certificate to your Keychain:", <.br(),
-                      <.code("security import ~/.boot2docker/certs/boot2docker-vm/key.pem -k ~/Library/Keychains/login.keychain"), <.br(),
-                      <.code("security import ~/.boot2docker/certs/boot2docker-vm/cert.pem  -k ~/Library/Keychains/login.keychain")
-                    ),
-                    <.li("Figure out the boot2docker ip using ", <.code("boot2docker ip")),
-                    <.li("Open your browser and verify you can connect to https://192.168.59.103:2376/_ping (this will ask for your certificate the first time)"),
-                    <.li("Try to reconnect! using https://192.168.59.103:2376")
-                  ),
-                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
-                )
-              )
-            )
-          ),
-          <.div(^.className := "panel panel-default",
-            <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-windows"), " Windows config")
-            ),
-            <.div(^.className := "list-group",
-              <.div(^.className := "list-group-item",
-                <.p(^.className := "list-group-item-text",
-                  "Docker Remote API use authentication base on certificates, to connect we need either " +
-                    "to disable TLS or to allow Chrome to use these certificates."),
+          )
+        )
+      )
+      ,
+      <.div(^.className := "panel panel-default",
+        <.div(^.className := "panel-heading",
+          <.h3(^.className := "panel-title", <.i(^.className := "fa wrench"), " How to config?")
+        ),
+        <.div(^.className := "list-group",
+          <.div(^.className := "list-group-item",
+            <.p(^.className := "list-group-item-text",
+              "To connect this app with Docker you need to enable the Docker Remote API:"),
+            <.ul(
+              <.li(
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X", ^.target := "_blank",
+                  <.i(^.className := "fa fa-apple"), "Mac OS X config")
+              ),
+              <.li(
                 <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/windows", ^.target := "_blank",
-                  "For more info about how to connect check the Wiki")
-              )
-            )
-          ),
-          <.div(^.className := "panel panel-default",
-            <.div(^.className := "panel-heading",
-              <.h3(^.className := "panel-title", <.i(^.className := "fa fa-linux"), " Linux config")
-            ),
-            <.div(^.className := "list-group",
-              <.div(^.className := "list-group-item",
-                <.p(^.className := "list-group-item-text",
-                  "We'll need to enable the Docker Remote API, but first make sure Docker daemon is up an running using ", <.code("docker info."),
-                  <.h3("Linux with systemd (Ubuntu 15.04, Debian 8,...)"),
-                  "Using systemd, we'll need to enable a systemd socket to access the Docker remote API:",
-                  <.ul(
-                    <.li("Create a new systemd config file called ", <.code("/etc/systemd/system/docker-tcp.socket"), " to make docker available on a TCP socket on port 2375.",
-                      <.pre( """[Unit]
-                               |Description=Docker HTTP Socket for the API
-                               |
-                               |[Socket]
-                               |ListenStream=2375
-                               |BindIPv6Only=both
-                               |Service=docker.service
-                               |
-                               |[Install]
-                               |WantedBy=sockets.target""".stripMargin)
-                    ),
-                    <.li("Register the new systemd http socket and restart docker", <.br(),
-                      <.code( """systemctl enable docker-tcp.socket
-                                |systemctl stop docker
-                                |systemctl start docker-tcp.socket""".stripMargin),
-                      <.li("Open your browser and verify you can connect to http://localhost:2375/_ping")
-                    )
-                  ),
-                  <.h3("Linux without systemd:"),
-                  <.ul(
-                    <.li("Edit ", <.code("/etc/default/docker"), " to allow connections adding:", <.br(),
-                      <.code("DOCKER_OPTS='-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock'")
-                    ),
-                    <.li("Restart the Docker service using:", <.br(),
-                      <.code("sudo service docker restart")
-                    ),
-                    <.li("Open your browser and verify you can connect to http://localhost:2375/_ping"),
-                    <.li("Try to reconnect! using http://localhost:2375")
-                  ),
-                  <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki", ^.target := "_blank", "Wiki for more info.")
-                )
+                  <.i(^.className := "fa fa-windows"), "Windows config")
+              ),
+              <.li(
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux", ^.target := "_blank",
+                  <.i(^.className := "fa fa-linux"), "Linux config")
               )
             )
           )
         )
       )
-
     )
   )
 
 
+}
+
+object SettingsPageModel {
+
+  object Info {
+    def apply(selectedUrl: String) = {
+      val connection = Connection(selectedUrl, ConnectionNoVerified)
+      new Info(List(connection), Some(connection))
+    }
+
+    def apply() = new Info(List.empty, None)
+  }
+
+  case class Info(connections: List[Connection], selected: Option[Connection] = None) {
+    def replace(original: Connection, newValue: Connection) = {
+      val newConnections = connections.map {
+        case `original` => newValue
+        case other => other
+      }
+      val newSelected = if (Some(original) == selected) Some(newValue) else selected
+      this.copy(connections = newConnections, selected = newSelected)
+    }
+
+
+    def select(url: String): Info = {
+      val newConnections = connections.find(_.url == url) match {
+        case None => connections :+ Connection(url, ConnectionNoVerified)
+        case Some(_) => connections
+      }
+      log.debug(s"Select $url")
+      val selected = newConnections.find(_.url == url)
+      this.copy(connections = newConnections, selected = selected)
+    }
+
+    def showSelect = connections.size > 1
+  }
+
+  sealed trait ConnectionState
+  object ConnectionVerifying extends ConnectionState
+  object ConnectionNoVerified extends ConnectionState
+  object ConnectionValid extends ConnectionState
+  object ConnectionUnableToConnect extends ConnectionState
+  object ConnectionInvalidApi extends ConnectionState
+
+  case class Connection(url: String, state: ConnectionState, id: UUID = UUID.randomUUID) {
+    def isValid = state == ConnectionValid
+
+    def checkConnection(): Future[Connection] = if (!url.startsWith("http")) {
+      Future.successful(Connection(url, ConnectionUnableToConnect))
+    } else {
+      DockerClient(model.Connection(url)).checkVersion().map {
+        case true => Connection(url, ConnectionValid)
+        case false => Connection(url, ConnectionInvalidApi)
+      }.recover {
+        case ex: Exception =>
+          log.info(s"Unable to connected to $url")
+          Connection(url, ConnectionUnableToConnect)
+      }
+    }
+
+    def stateMessage = state match {
+      case ConnectionVerifying | ConnectionNoVerified => ""
+      case ConnectionUnableToConnect => "Unable to connect"
+      case ConnectionInvalidApi => s"Invalid API version, minimum API supported is ${DockerClientConfig.DockerVersion}"
+      case ConnectionValid => "Valid connection"
+    }
+
+    def stateIcon = state match {
+      case ConnectionVerifying => "glyphicon-refresh glyphicon-spin"
+      case ConnectionNoVerified => ""
+      case ConnectionValid => "glyphicon-saved"
+      case ConnectionUnableToConnect => "glyphicon-alert"
+      case ConnectionInvalidApi => "glyphicon-warning-sign"
+    }
+  }
 }
