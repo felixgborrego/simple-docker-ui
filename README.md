@@ -35,9 +35,11 @@ Any feedback is more than welcome!
 
 ### Config
 
-[Connect to Boot2Docker on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X)
+[Connect on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X)
 
-[Connect to Linux](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)
+[Connect on Linux](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)
+
+[Connect on Windows](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/windows)
 
 ### Stack
 
@@ -46,5 +48,4 @@ Any feedback is more than welcome!
 *  Bootstrap
 *  Bower
 *  Momentjs
-*  Chrome packaged app framework
   
