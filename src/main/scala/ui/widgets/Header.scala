@@ -47,7 +47,10 @@ object Header {
     def select(url:String) = for{
       _ <- ConfigStorage.saveConnection(url)
       _ <- t.props.workbenchRef.reconnect()
-    } yield t.props.workbenchRef.show(HomePage)
+    } yield {
+        t.props.workbenchRef.show(SettingsPage)
+        t.props.workbenchRef.show(HomePage)
+      }
   }
 
 }
