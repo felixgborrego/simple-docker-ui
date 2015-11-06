@@ -91,13 +91,13 @@ object HeaderRender {
             <.li(^.className := P.isImagesActive, P.workbenchRef.link(ImagesPage)(<.span(^.className := "glyphicon glyphicon-picture"), " Images")),
             <.li(^.className := P.isSettingsActive, P.workbenchRef.link(SettingsPage)(<.span(^.className := "glyphicon glyphicon-wrench"), " Settings"))
           ),
-          <.ul(^.className := "nav navbar-nav navbar-right navbar-right-margin",
+          (S.savedUrls.size > 1) ?= <.ul(^.className := "nav navbar-nav navbar-right navbar-right-margin",
             <.li(^.className := "dropdown",
               <.a(^.className := "dropdown-toggle", data_toggle := "dropdown", ^.role := "button",
                 ^.aria.haspopup := "true", ^.aria.expanded := "false", S.url,
-                (S.savedUrls.size > 1) ?= <.span(^.className := "caret")
+                <.span(^.className := "caret")
               ),
-              (S.savedUrls.size > 1) ?= <.ul(^.className := "dropdown-menu",
+              <.ul(^.className := "dropdown-menu",
                 S.savedUrls.map { url =>
                   <.li(<.a(url, ^.onClick --> B.select(url)))
                 }

@@ -130,7 +130,7 @@ object SettingsPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.div(^.className := "panel-heading clearfix",
-          <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug"), " Connection to Docker Remote Api"),
+          <.h3(^.className := "panel-title pull-left", <.i(^.className := "fa fa-plug"), " Connection to Docker Remote API"),
           <.div(^.className := "btn-group pull-right",
             Button("Save", "fa fa-check", "Verify and Save connections")(B.save)
           )

@@ -89,7 +89,9 @@ object ContainersPageRender {
           <.tbody(
             containers.map { c =>
               <.tr(
-                <.td(props.ref.link(ContainerPage(c.Id, props.ref))(c.id)),
+                <.td(props.ref.link(ContainerPage(c.Id, props.ref))(c.id),
+                  <.div(<.small(c.Names.headOption.map(_.replaceFirst("/",""))))
+                ),
                 <.td(c.Image),
                 <.td(^.className:="hidden-xs hidden-sm",c.Command),
                 <.td(^.className:="hidden-xs", c.ports.map(<.div(_))),
