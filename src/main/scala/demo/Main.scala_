@@ -1,0 +1,19 @@
+//
+//import demo.DemoComponent
+//import japgolly.scalajs.react.React
+//import org.scalajs.dom
+//import util.logger._
+//
+//import scala.scalajs.js.JSApp
+//import scala.scalajs.js.annotation.JSExport
+//
+//@JSExport("MainApp")
+//object MainApp extends JSApp {
+//
+//  @JSExport
+//  override def main(): Unit = {
+//    log.info("Staring Demo app")
+//    val ui = DemoComponent()
+//    React.render(ui, dom.document.getElementById("container"))
+//  }
+//}

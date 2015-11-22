@@ -96,7 +96,11 @@ object HomePageRender {
     )
     <.div(
       ContainersCard(docker, ref)(() => B.refresh()),
-      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter)
+      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter),
+      !docker.info.swarmMasterInfo.isEmpty ?= InfoCard(docker.info.swarmMasterInfo, InfoCard.SMALL, Some("Swarm Info")),
+      !docker.info.swarmNodesDescription.isEmpty ?= docker.info.swarmNodesDescription.map { nodeInfo =>
+        InfoCard(nodeInfo, InfoCard.SMALL, nodeInfo.keys.headOption)
+      }
     )
   }
 

@@ -1,7 +1,11 @@
 package model
 
 import util.StringUtils._
+import util.collections._
 import util.momentJs.Moment
+
+import scala.collection.immutable.ListMap
+import scala.util.Try
 
 /**
  * This models match with the Json coming from the Docker Remote API.
@@ -19,7 +23,7 @@ case class DockerMetadata(connection: Connection,
                           version: Version,
                           containers: Seq[Container]) {
 
-  def totalContainersSize = bytesToSize(containers.map(c => c.sizeRootFs + c.sizeRw).sum)
+  def totalContainersSize = bytesToSize(containers.map(c => c.SizeRootFs + c.SizeRw).sum)
 }
 
 case class Info(Containers: Int,
@@ -32,7 +36,38 @@ case class Info(Containers: Int,
                 MemTotal: Float,
                 NEventsListener: Int,
                 NGoroutines: Int,
-                OperatingSystem: String)
+                DriverStatus: Seq[Seq[String]] = Seq.empty,
+                OperatingSystem: String) {
+
+  lazy val allDriverStatus: Seq[(String, String)] = Try(DriverStatus.map {
+    case Seq(property, value) => Some(property.replace("\b", "") -> value)
+    case _ => None
+  }.flatten).getOrElse(Seq.empty)
+
+  lazy val isSwarmMaster = allDriverStatus.exists { case (property, _) => property == "Nodes" }
+
+  lazy val swarmMasterInfo: ListMap[String, String] = if (isSwarmMaster) {
+    ListMap(allDriverStatus.takeTo { case (property, value) => property != "Nodes" }: _*)
+  } else {
+    ListMap.empty
+  }
+
+  lazy val swarmNodesInfo = allDriverStatus.dropWhile { case (property, value) => property != "Nodes" }.drop(1)
+
+  lazy val swarmNodesDescription: Seq[ListMap[String, String]] = {
+    val (nodes, lastNode) = swarmNodesInfo.foldLeft((Seq.empty[ListMap[String, String]], ListMap.empty[String, String])) {
+      case ((result, currentNode), (property, value)) =>
+        if (property.startsWith(" ")) {
+          val nodeAcc = currentNode + (property -> value)
+          (result, nodeAcc)
+        } else {
+          (result :+ currentNode, ListMap((property -> value)))
+        }
+
+    }
+    (nodes :+ lastNode).filterNot(_.isEmpty)
+  }
+}
 
 case class Version(ApiVersion: String,
                    Arch: String,
@@ -53,13 +88,12 @@ case class Container(Command: String,
                      Image: String,
                      Status: String,
                      Names: Seq[String],
-                     SizeRootFs: Option[Int] = None,
-                     SizeRw: Option[Int] = None,
-                     Ports: Seq[Port]) {
+                     SizeRootFs: Int = 0,
+                     SizeRw: Int = 0,
+                     val Ports: Seq[Port] = Seq.empty
+                      ) {
   def id = subId(Id)
 
-  val sizeRootFs = SizeRootFs.getOrElse(0).toLong
-  val sizeRw = SizeRw.getOrElse(0).toLong
 
   def created = {
     val timeStamp = Created.toLong * 1000L
@@ -87,7 +121,7 @@ case class ContainerInfo(Args: Seq[String],
                          Created: String,
                          Config: ContainerConfig,
                          State: ContainerState,
-                         Volumes: Map[String, String],
+                         Volumes: Map[String, String] = Map.empty,
                          NetworkSettings: NetworkSettings) {
   def id = subId(Id)
 
@@ -246,7 +280,7 @@ case class HostConfig(PublishAllPorts: Boolean,
                       Binds: Seq[String],
                       PortBindings: Map[String, Seq[NetworkSettingsPort]] = Map.empty)
 
-case class CreateContainerResponse(Id: String, Warnings: Seq[String])
+case class CreateContainerResponse(Id: String, Warnings: Seq[String] = Seq.empty)
 
 // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#monitor-dockers-events
 case class DockerEvent(status: String, id: String, from: String = "", time: Double) {
