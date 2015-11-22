@@ -1,0 +1,7 @@
+package resources
+
+object ApiV17{
+  val Info ="""
+              {"ID":"5PQU:GMIY:G5IP:KGPC:KCRI:WZKZ:DM3P:X3RD:OYRI:MRDY:MWDM:WW3V","Containers":11,"Images":33,"Driver":"aufs","DriverStatus":[["Root Dir","/mnt/sda1/var/lib/docker/aufs"],["Backing Filesystem","extfs"],["Dirs","55"],["Dirperm1 Supported","true"]],"MemoryLimit":true,"SwapLimit":true,"CpuCfsPeriod":true,"CpuCfsQuota":true,"IPv4Forwarding":true,"BridgeNfIptables":true,"BridgeNfIp6tables":true,"Debug":true,"NFd":33,"OomKillDisable":true,"NGoroutines":74,"SystemTime":"2015-11-22T15:37:49.118737781Z","ExecutionDriver":"native-0.2","LoggingDriver":"json-file","NEventsListener":1,"KernelVersion":"4.1.12-boot2docker","OperatingSystem":"Boot2Docker 1.9.0 (TCL 6.4); master : 16e4a2a - Tue Nov  3 19:49:22 UTC 2015","IndexServerAddress":"https://index.docker.io/v1/","RegistryConfig":{"InsecureRegistryCIDRs":["127.0.0.0/8"],"IndexConfigs":{"docker.io":{"Name":"docker.io","Mirrors":null,"Secure":true,"Official":true}},"Mirrors":null},"InitSha1":"","InitPath":"/usr/local/bin/docker","NCPU":1,"MemTotal":1044578304,"DockerRootDir":"/mnt/sda1/var/lib/docker","HttpProxy":"","HttpsProxy":"","NoProxy":"","Name":"swarm-node-01","Labels":["provider=virtualbox"],"ExperimentalBuild":false,"ServerVersion":"1.9.0","ClusterStore":"","ClusterAdvertise":""}
+            """
+}
