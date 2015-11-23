@@ -5,7 +5,7 @@ import model._
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle.default._
-import util.EventsCustomParser
+import util.{FutureUtils, EventsCustomParser}
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.googleAnalytics._
@@ -101,7 +101,7 @@ case class DockerClient(connection: Connection) {
     sendEvent(EventCategory.Image, EventAction.GC)
     val usedImagesId: Future[Seq[String]] = for {
       containers <- containers(all = true, extraInfo = false)
-      containersInfo <- Future.sequence(containers.map(container => containerInfo(container.Id)))
+      containersInfo <-  FutureUtils.sequenceIgnoringErrors(containers.toList.map(container => () => containerInfo(container.Id)))
     } yield containersInfo.map(_.Image)
 
     // process the tree removing any used Image and its parents
@@ -128,7 +128,8 @@ case class DockerClient(connection: Connection) {
       }
 
     imagesToGC.flatMap { images =>
-      Future.sequence(images.map(image => removeImage(image)))
+     val tasks = images.map(image => ()  => removeImage(image)).toList
+      FutureUtils.sequenceIgnoringErrors(tasks)
     }.flatMap(_ => images())
   }
 
