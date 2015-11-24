@@ -9,6 +9,8 @@ import ui.WorkbenchRef
 import util.PullEventsCustomParser.EventStatus
 import util.googleAnalytics._
 
+import scala.concurrent.{Promise, Future}
+
 object PullModalDialog {
 
   trait ActionsBackend {
@@ -21,7 +23,7 @@ object PullModalDialog {
 
     val done = !running && events.nonEmpty
 
-    def message = if (finished) events.headOption.map(_.status) else None
+    def message = events.headOption.map(_.status)
   }
 
 
@@ -43,21 +45,27 @@ object PullModalDialog {
     }
 
     val RefreshMilliseconds = 1000
-    def pullImage(): Unit = t.props.ref.client.map { client =>
-      sendEvent(EventCategory.Image, EventAction.Pull, "StartPull")
-      val stream = client.pullImage(t.props.image.name)
-      t.modState(s => s.copy(progress = s.progress.copy(running = true)))
-      def refresh(): Unit = dom.setTimeout(() => {
-        val events = stream.refreshEvents()
-        t.modState(s => s.copy(progress = s.progress.copy(events = events, running = true)))
-        if (!stream.done) refresh()
-        else {
-          t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
-          t.props.actionsBackend.imagePulled()
-          sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
-        }
-      }, RefreshMilliseconds)
-      refresh()
+    def pullImage(): Future[Unit] = {
+      val p = Promise[Unit]()
+
+      t.props.ref.client.map { client =>
+        sendEvent(EventCategory.Image, EventAction.Pull, "StartPull")
+        val stream = client.pullImage(t.props.image.name + ":latest")
+        t.modState(s => s.copy(progress = s.progress.copy(running = true)))
+        def refresh(): Unit = dom.setTimeout(() => {
+          val (activeEvents, finishedEvents) = stream.refreshEvents()
+          t.modState(s => s.copy(progress = s.progress.copy(events = activeEvents, running = true)))
+          if (!stream.done && t.isMounted()) refresh()
+          else {
+            t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
+            t.props.actionsBackend.imagePulled()
+            sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
+            p.success({})
+          }
+        }, RefreshMilliseconds)
+        refresh()
+      }
+      p.future
     }
   }
 
@@ -103,7 +111,7 @@ object PullModalDialogRender {
             ),
             <.div(^.className := "btn-group pull-right",
               <.button(^.id := "open-modal-dialog", ^.display := "none", data_toggle := "modal", data_target := "#editModal", "Open"),
-              (!finished && !running) ?= <.button(^.className := "btn btn-primary", ^.onClick --> B.pullImage, "Pull Image")
+              !finished ?= Button( "Pull Image","glyphicon-cloud-download")(B.pullImage)
             ),
             <.h3(^.className := "modal-title")(title)
           ),

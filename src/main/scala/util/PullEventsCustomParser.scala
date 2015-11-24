@@ -13,10 +13,12 @@ import scala.util.Try
  */
 object PullEventsCustomParser {
 
-  case class EventStream(var events: ArrayBuffer[EventStatus] = ArrayBuffer.empty, var indexLastInValid: Int = 0, var data: String = "", var done: Boolean = false) {
+  case class EventStream(var activeEvents: ArrayBuffer[EventStatus] = ArrayBuffer.empty,
+                         var finishedEvents: ArrayBuffer[EventStatus] = ArrayBuffer.empty,
+                         var indexLastInValid: Int = 0, var data: String = "", var done: Boolean = false) {
     def refreshEvents() = {
       PullEventsCustomParser.parse(this, data)
-      events
+      (activeEvents,finishedEvents)
     }
   }
 
@@ -43,15 +45,19 @@ object PullEventsCustomParser {
   // transform events and grouping duplicates together
   def progressEvents(newEvents: Seq[PullProgressEvent], currentStream: EventStream): Unit = {
     newEvents.foreach { rawEvent =>
-      val index = currentStream.events.indexWhere(_.id == rawEvent.id)
+      val index = currentStream.activeEvents.indexWhere(_.id == rawEvent.id)
       if (index != -1) {
-        // using this as an optimization
-        val event = currentStream.events(index)
+        // using index as an optimization
+        val event = currentStream.activeEvents(index)
         event.progressValue = progressValue(rawEvent)
         event.progressText = progressText(rawEvent)
         event.status = rawEvent.status
+        if(event.status == "Download complete" || event.status == "Pull complete") {
+          currentStream.activeEvents.remove(index)
+          currentStream.finishedEvents.prepend(event)
+        }
       } else {
-        currentStream.events.prepend(EventStatus(rawEvent.id, progressValue(rawEvent), rawEvent.status, progressText(rawEvent)))
+        currentStream.activeEvents.prepend(EventStatus(rawEvent.id, progressValue(rawEvent), rawEvent.status, progressText(rawEvent)))
       }
     }
   }

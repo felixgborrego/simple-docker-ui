@@ -1,7 +1,7 @@
 package model
 
 
-import resources.{ApiV21, ApiV17}
+import resources.{ApiV17, ApiV21}
 import upickle.default._
 import utest._
 
@@ -10,12 +10,12 @@ object DockerInfoTest extends TestSuite {
   def tests = TestSuite {
 
     'V19 {
-      'DockerInfo {
+      'DockerInfo_V19 {
         val json = ApiV17.Info
         val info = read[Info](json)
         val swarmInfo = info.swarmMasterInfo.toSeq
-       assert (swarmInfo == Seq.empty)// no swarm for a normal docker
 
+        assert (swarmInfo == Seq.empty)// no swarm for a normal docker
         assert ( info.Images == 33)
 
       }
