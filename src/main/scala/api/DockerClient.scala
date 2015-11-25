@@ -98,10 +98,11 @@ case class DockerClient(connection: Connection) {
     })
 
   def garbageCollectionImages(): Future[Seq[Image]] = {
+    log.info("Staring garbageCollectionImages")
     sendEvent(EventCategory.Image, EventAction.GC)
     val usedImagesId: Future[Seq[String]] = for {
       containers <- containers(all = true, extraInfo = false)
-      containersInfo <-  FutureUtils.sequenceIgnoringErrors(containers.toList.map(container => () => containerInfo(container.Id)))
+      containersInfo <-  FutureUtils.sequenceWithDelay(containers.toList.map(container => () => containerInfo(container.Id)))
     } yield containersInfo.map(_.Image)
 
     // process the tree removing any used Image and its parents
@@ -121,6 +122,7 @@ case class DockerClient(connection: Connection) {
       all <- images(all = true)
       usedIds <- usedImagesId
     } yield {
+        log.info(s"Calculating imagesToGC all: ${all.size}, usedIds: ${usedIds.size} ")
         val noUsedImages = usedIds.foldLeft(all) {
           case (remaining, imageId) => filterUsed(remaining, imageId)
         }
@@ -128,8 +130,9 @@ case class DockerClient(connection: Connection) {
       }
 
     imagesToGC.flatMap { images =>
+      log.info(s"imagesToGC: ${images.size} ")
      val tasks = images.map(image => ()  => removeImage(image)).toList
-      FutureUtils.sequenceIgnoringErrors(tasks)
+      FutureUtils.sequenceWithDelay(tasks)
     }.flatMap(_ => images())
   }
 
