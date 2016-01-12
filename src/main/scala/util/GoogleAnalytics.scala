@@ -27,6 +27,7 @@ object googleAnalytics {
     val Connected = "Connected"
     val Unable = "Unable"
     val InvalidVersion = "InvalidVersion"
+    val UnsupportedOptionalVersion = "UnsupportedOptionalVersion"
     val Try = "Try"
     val Pull = "Pull"
     val GC = "GC"
