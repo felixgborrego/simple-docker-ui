@@ -122,6 +122,7 @@ case class ContainerInfo(Args: Seq[String],
                          Config: ContainerConfig,
                          State: ContainerState,
                          Volumes: Map[String, String] = Map.empty,
+                         HostConfig: HostConfig,
                          NetworkSettings: NetworkSettings) {
   def id = subId(Id)
 
@@ -278,7 +279,10 @@ case class VolumeEmptyHolder(info: Option[String] = None)
 // HostConfig for https://docs.docker.com/reference/api/docker_remote_api_v1.17/#create-a-container
 case class HostConfig(PublishAllPorts: Boolean,
                       Binds: Seq[String],
-                      PortBindings: Map[String, Seq[NetworkSettingsPort]] = Map.empty)
+                      Links: Seq[String],
+                      PortBindings: Map[String, Seq[NetworkSettingsPort]] = Map.empty) {
+  lazy val links =  Option(Links).getOrElse(Seq.empty).mkString(", ")
+}
 
 case class CreateContainerResponse(Id: String, Warnings: Seq[String] = Seq.empty)
 

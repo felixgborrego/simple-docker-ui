@@ -6,7 +6,6 @@ import model._
 import org.scalajs.dom
 import org.scalajs.dom.ext.AjaxException
 import ui.WorkbenchRef
-import ui.pages.{SettingsPage, ImagesPage, ContainersPage, HomePage}
 import ui.widgets.Alert
 import util.CopyPasteUtil
 import util.StringUtils._
@@ -25,12 +24,16 @@ object ContainerRequestForm {
   case object PortConfigPanel extends ConfigPanel
   case object VolumesConfigPanel extends ConfigPanel
   case object EnvironmentConfigPanel extends ConfigPanel
+  case object LinkingConfigPanel extends ConfigPanel
+
   case class Env(key: String, value: String, allowEdit: Boolean = true)
+  case class Link(key: String, value: String)
   case class VolumeMapping(hostPath: String, containerPath: String, rw: Boolean = true, allowEdit: Boolean = true)
 
   case class State(request: CreateContainerRequest,
                    volumesMapping: Seq[VolumeMapping],
                    environment: Seq[Env],
+                   links: Seq[Link],
                    portsRadioOption: PortsRadioOptions = AllPorts,
                    panelSelected: ConfigPanel = PortConfigPanel,
                    warnings: Seq[String] = Seq.empty,
@@ -147,6 +150,24 @@ object ContainerRequestForm {
       state.copy(request = state.request.copy(Env = envRequest), environment = newEnvironment)
     }
 
+    def updateLinkKey(link: Link)(e: ReactEventI) = {
+      val newLinks = t.state.links.replace(link, link.copy(key = e.target.value))
+      updateLinks(newLinks)
+    }
+
+    def updateLinkValue(link: Link)(e: ReactEventI) = {
+      val newLinks = t.state.links.replace(link, link.copy(value = e.target.value))
+      updateLinks(newLinks)
+    }
+
+    def updateLinks(links: Seq[Link]) = t.modState { state =>
+      val linksNoEmpty = links.filterNot(link => link.key == "" && link.value == "")
+      val linkRequest = linksNoEmpty.map(env => env.key + ":" + env.value)
+
+      val hostConfig = state.request.HostConfig.copy(Links = linkRequest)
+      state.copy(request = state.request.copy(HostConfig = hostConfig), links = linksNoEmpty :+ Link("", "") )
+    }
+
     def selectPanel(selected: ConfigPanel): Unit = t.modState(_.copy(panelSelected = selected))
 
     def run(): Unit = t.props.ref.client.map { client =>
@@ -191,9 +212,10 @@ object ContainerRequestForm {
 
       val binds = request.HostConfig.Binds
       val volumes = if (binds.isEmpty) "" else binds.mkString(" -v ", " -v ", "")
-      val env = if (request.Env.isEmpty) "" else " -e " + request.Env.mkString(" -e ", " -e ", "")
+      val env = if (request.Env.isEmpty) "" else request.Env.mkString(" -e ", " -e ", "")
+      val links = if (request.HostConfig.Links.isEmpty) "" else request.HostConfig.Links.mkString(" --link ", " --link ", "")
 
-      s"docker run$paramI$paramT$ports$volumes$env$nameCommand $imageName $cmd"
+      s"docker run$paramI$paramT$ports$volumes$env$links$nameCommand $imageName $cmd"
     }
 
     def panelSelectedClass(panel: ConfigPanel) = if (panel == t.state.panelSelected) "active" else ""
@@ -204,7 +226,7 @@ object ContainerRequestForm {
     val exports = initialConfig.exposedPorts
     val environment = initialConfig.env.map(_.split("=")).map { case Array(key, value) => Env(key, value, allowEdit = false) } :+ Env("", "")
     val volumesMapping: Seq[VolumeMapping] = initialConfig.volumes.keys.map(VolumeMapping("", _, allowEdit = false)).toSeq :+ VolumeMapping("", "")
-
+    val links = Seq(Link("", ""))
     val request = CreateContainerRequest(
       AttachStdin = true,
       AttachStdout = true,
@@ -213,10 +235,10 @@ object ContainerRequestForm {
       OpenStdin = true, // opens stdin
       Cmd = initialConfig.Cmd,
       Image = props.imageName,
-      HostConfig = HostConfig(PublishAllPorts = true, PortBindings = Map.empty, Binds = Seq.empty),
+      HostConfig = HostConfig(PublishAllPorts = true, PortBindings = Map.empty, Binds = Seq.empty, Links = Seq.empty),
       ExposedPorts = exports,
       name = "")
-    val initialState = State(request, volumesMapping, environment)
+    val initialState = State(request, volumesMapping, environment, links)
     ContainerRequestFormRender.component(initialState)(props)
   }
 
@@ -299,14 +321,16 @@ object ContainerRequestFormRender {
   def configPanels(S: State, B: Backend, P: Props) =
     <.div(^.className := "panel",
       <.ul(^.className := "nav nav-tabs",
-        P.hasExposedPorts ?= <.li(^.className := B.panelSelectedClass(PortConfigPanel), <.a(^.onClick --> B.selectPanel(PortConfigPanel), <.i(^.className := "fa fa-plug"), " Ports")),
+        <.li(^.className := B.panelSelectedClass(PortConfigPanel), <.a(^.onClick --> B.selectPanel(PortConfigPanel), <.i(^.className := "fa fa-plug"), " Ports")),
         <.li(^.className := B.panelSelectedClass(VolumesConfigPanel), <.a(^.onClick --> B.selectPanel(VolumesConfigPanel), <.i(^.className := "fa fa-folder-open"), " Volumes")),
-        <.li(^.className := B.panelSelectedClass(EnvironmentConfigPanel), <.a(^.onClick --> B.selectPanel(EnvironmentConfigPanel), <.i(^.className := "fa fa-laptop"), " Enviromments"))
+        <.li(^.className := B.panelSelectedClass(EnvironmentConfigPanel), <.a(^.onClick --> B.selectPanel(EnvironmentConfigPanel), <.i(^.className := "fa fa-laptop"), " Enviromments")),
+        <.li(^.className := B.panelSelectedClass(LinkingConfigPanel), <.a(^.onClick --> B.selectPanel(LinkingConfigPanel), <.i(^.className := "fa fa-external-link"), " Links"))
       ),
       <.div(^.className := "panel-body panel-config",
         portsPanel(S, B),
         volumesPanel(S, B),
-        environmentsPanel(S, B)
+        environmentsPanel(S, B),
+        linkingPanel(S, B)
       )
     )
 
@@ -341,6 +365,13 @@ object ContainerRequestFormRender {
     <.div(
       tableEnvironment(S: State, B: Backend)
     )
+
+  def linkingPanel(S: State, B: Backend) = S.panelSelected == LinkingConfigPanel ?=
+    <.div(
+      tableLinking(S: State, B: Backend)
+    )
+
+
 
   def tablePortBindings(S: State, B: Backend) =
     <.div(^.className := "",
@@ -423,6 +454,29 @@ object ContainerRequestFormRender {
       )
     )
 
+  def tableLinking(S: State, B: Backend) =
+    <.table(^.className := "table table-hover table-striped",
+      <.thead(
+        <.tr(
+          <.th("Source Container Name"),
+          <.th(":"),
+          <.th("Container Alias Name")
+        )
+      ),
+      <.tbody(
+        S.links.map { case link =>
+          <.tr(
+            <.td(<.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "container_name",
+              ^.value := link.key, ^.onChange ==> B.updateLinkKey(link))
+            ),
+            <.td("="),
+            <.td(<.input(^.`type` := "text", ^.className := "form-control", ^.placeholder := "alias",
+              ^.value := link.value, ^.onChange ==> B.updateLinkValue(link))
+            )
+          )
+        }
+      )
+    )
 
 }
 

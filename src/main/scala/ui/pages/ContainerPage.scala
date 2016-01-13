@@ -172,7 +172,8 @@ object ContainerPageRender {
 
     val networkInfo = Map(
       "Ip" -> containerInfo.NetworkSettings.IPAddress,
-      "Port Mapping" -> ports
+      "Port Mapping" -> ports,
+      "Links" ->  containerInfo.HostConfig.links
     ) ++
       containerInfo.Volumes.map { case (k, v) => ("volume: " + k, v) }
 
