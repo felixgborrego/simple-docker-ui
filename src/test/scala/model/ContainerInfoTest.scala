@@ -1,6 +1,6 @@
 package model
 
-import resources.ApiV21
+import resources.{ApiV19, ApiV21}
 import upickle.default._
 import utest._
 import utest.framework.TestSuite
@@ -23,6 +23,17 @@ object ContainerInfoTest extends TestSuite {
         val temp = containers.map(_.SizeRootFs)
 
         assert (temp == Seq(0,0))
+      }
+
+    }
+
+    'V19 {
+      'Containers_All {
+        val json = ApiV19.Containers
+          val containers = read[Seq[Container]](json)
+          val defaultSize = containers.headOption.map(_.SizeRootFs)
+
+          assert(defaultSize == Some(0))
       }
 
     }

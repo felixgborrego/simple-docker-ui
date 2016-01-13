@@ -2,14 +2,15 @@ package api
 
 import api.DockerClientConfig.APIRequired._
 import model._
+import model.stats.ContainerStats
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle.default._
-import util.{FutureUtils, EventsCustomParser}
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.googleAnalytics._
 import util.logger._
+import util.{EventsCustomParser, FutureUtils, StatsCustomParser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
@@ -20,12 +21,17 @@ object DockerClientConfig {
   val HttpExternalTimeOut = 20 * 1000
   val PingTimeOut = 4 * 1000
   val DockerVersion = s"v$Mayor.$Minor"
+  val DockerOptionalVersion = s"v${APIOptional.Mayor}.${APIOptional.Minor}"
 
   object APIRequired {
     val Mayor = 1
     val Minor = 17
   }
 
+  object APIOptional {
+    val Mayor = 1
+    val Minor = 19
+  }
 
   val KeepInGarbageCollection = 10
 }
@@ -35,6 +41,7 @@ case class DockerClient(connection: Connection) {
   import DockerClientConfig._
 
   val url = connection.url + "/" + DockerVersion
+  val urlOptional = connection.url + "/" + DockerOptionalVersion
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#ping-the-docker-server
   def ping(): Future[Unit] =
@@ -284,6 +291,27 @@ case class DockerClient(connection: Connection) {
       read[Seq[FileSystemChange]](xhr.responseText)
     }
   }
+
+  // https://docs.docker.com/engine/reference/api/docker_remote_api_v1.19/#get-container-stats-based-on-resource-usage
+  def containerStats(containerId: String)(updateUI: (Option[ContainerStats], ConnectedStream) => Unit): Unit = {
+    val xhr = new XMLHttpRequest()
+    val stream = new ConnectedStream {
+      override def abort(): Unit = {
+        xhr.abort()
+      }
+    }
+    xhr.onreadystatechange = { _: Event =>
+      log.debug("container stats update")
+      val stats = StatsCustomParser.parse(xhr.responseText)
+      updateUI(stats, stream)
+    }
+
+    val statsUrl = s"$url/containers/$containerId/stats"
+    xhr.open("GET", statsUrl, async = true)
+    log.info(s"[dockerClient.containerStats] $statsUrl")
+    xhr.send()
+  }
+
 }
 
 trait ConnectedStream {

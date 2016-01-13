@@ -298,3 +298,56 @@ case class FileSystemChange(Path: String, Kind: Int) {
     case x => s"Unknown $x"
   }
 }
+
+package stats {
+
+  case class Network(rx_bytes: Int, rx_packets: Int, rx_errors: Int, rx_dropped: Int, tx_bytes: Int, tx_packets: Int, tx_errors: Int, tx_dropped: Int)
+
+  case class CpuUsage(total_usage: Double,
+                      percpu_usage: Seq[Double],
+                      usage_in_kernelmode: Double,
+                      usage_in_usermode: Double)
+
+  case class ThrottlingData(periods: Double, throttled_periods: Double, throttled_time: Double)
+
+  case class MemoryStats(usage: Double, max_usage: Double, /*stats: MemoryStatsStats,*/ failcnt: Double, limit: Double)
+
+  case class PrecpuStats(cpu_usage: CpuUsage,
+                         system_cpu_usage: Double,
+                         throttling_data: ThrottlingData)
+
+  case class ContainerStats(read: String,
+                            network: Network,
+                            precpu_stats: PrecpuStats,
+                            cpu_stats: PrecpuStats,
+                            memory_stats: MemoryStats
+                            /* blkio_stats: BlkioStats*/) {
+
+
+    def cpuPercent: Double = {
+      val previousCpu = precpu_stats.cpu_usage.total_usage
+      val previousSystem = precpu_stats.system_cpu_usage
+
+      // change for the cpu usage of the container in between readings
+      val cpuDelta = cpu_stats.cpu_usage.total_usage - previousCpu
+      //change for the entire system between readings
+      val systemDelta = cpu_stats.system_cpu_usage - previousSystem
+
+      if (systemDelta > 0.0 && cpuDelta > 0.0)
+        (cpuDelta / systemDelta) * cpu_stats.cpu_usage.percpu_usage.size * 100.0
+      else
+        0.0
+    }
+
+    def memory: Double = memory_stats.usage
+
+    def memoryLimit: Double = memory_stats.limit
+
+    def memPercent: Double = if (memory_stats.limit != 0.0)
+      memory_stats.usage / memory_stats.limit * 100.0
+    else
+      0
+
+  }
+
+}
