@@ -3,7 +3,7 @@ package ui.pages
 import api.DockerClientConfig
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
-import model.{Container, ContainersInfo}
+import model.Container
 import ui.WorkbenchRef
 import ui.widgets.{Alert, Button}
 import util.logger._
@@ -15,7 +15,7 @@ object ContainersPage extends Page {
 
   val id = "Containers"
 
-  case class State(info: ContainersInfo = ContainersInfo(), error: Option[String] = None)
+  case class State(running: Seq[Container] = Seq.empty, history: Seq[Container] = Seq.empty, error: Option[String] = None)
 
   case class Props(ref: WorkbenchRef)
 
@@ -23,8 +23,11 @@ object ContainersPage extends Page {
     def willMount(): Unit = refresh()
 
     def refresh():Future[Unit] = t.props.ref.client.map { client =>
-      client.containersInfo().map { info =>
-        t.modState(s => State(info))
+      client.containerRunning().map { running =>
+        t.modState(s => s.copy(running = running, error = None))
+        client.containersHistory(running).map { history =>
+          t.modState(s => s.copy(history = history))
+        }: Unit
       }.recover{
         case ex: Exception =>
           log.error("ContainersPage", "Unable to get Metadata", ex)
@@ -32,8 +35,8 @@ object ContainersPage extends Page {
       }
     }.getOrElse(Future.successful{})
 
-    def garbageCollection() = t.props.ref.client.get.garbageCollectionContainers().map { info =>
-      t.modState(s => State(info))
+    def garbageCollection() = t.props.ref.client.get.garbageCollectionContainers().flatMap { _ =>
+      refresh()
     }
 
   }
@@ -57,8 +60,8 @@ object ContainersPageRender {
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    table("glyphicon glyphicon-transfer", "Container Running", S.info.running, showGC = false, showRefresh=true, P, B),
-    table("glyphicon glyphicon-equalizer", "History", S.info.history, showGC = true, showRefresh = false, P, B)
+    table("glyphicon glyphicon-transfer", "Container Running", S.running, showGC = false, showRefresh=true, P, B),
+    table("glyphicon glyphicon-equalizer", "History", S.history, showGC = true, showRefresh = false, P, B)
   )
 
   def table(iconClassName: String, title: String, containers: Seq[Container], showGC: Boolean, showRefresh: Boolean, props: Props, B: Backend) =

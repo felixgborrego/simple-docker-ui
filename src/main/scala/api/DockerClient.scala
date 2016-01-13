@@ -60,10 +60,13 @@ case class DockerClient(connection: Connection) {
   def containersRunningWithExtraInfo(): Future[Seq[Container]] =
     containers(all = false, extraInfo = true)
 
-  def containersInfo(): Future[ContainersInfo] = for {
-    r <- containers(all = false, extraInfo = false)
+
+  def containerRunning(): Future[Seq[Container]] =
+    containers(all = false, extraInfo = false)
+
+  def containersHistory(running: Seq[Container]): Future[Seq[Container]] = for {
     all <- containers(all = true, extraInfo = false)
-  } yield ContainersInfo(r, all)
+  } yield all.diff(running)
 
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-a-container
@@ -144,7 +147,7 @@ case class DockerClient(connection: Connection) {
   }
 
 
-  def garbageCollectionContainers(): Future[ContainersInfo] = {
+  def garbageCollectionContainers(): Future[Unit] = {
     sendEvent(EventCategory.Container, EventAction.GC)
     containers(all = true, extraInfo = false).flatMap { all =>
       def delete(containers: List[Container]): Future[Unit] = containers match {
@@ -152,7 +155,7 @@ case class DockerClient(connection: Connection) {
         case Nil => Future.successful(())
       }
       delete(all.drop(KeepInGarbageCollection).toList)
-    }.flatMap(_ => containersInfo())
+    }
   }
 
   def top(containerId: String): Future[ContainerTop] =
