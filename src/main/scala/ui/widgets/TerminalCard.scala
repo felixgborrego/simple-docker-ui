@@ -72,9 +72,6 @@ object TerminalCard {
 
       terminal.on("data", (data: String) => {
         if (t.props.info.stdinOpened) {
-          if (!t.props.info.stdinAttached) {
-            terminal.write(data.toString.replace("\r", "\r\n"))
-          }
           ws.send(data)
         }
       })
