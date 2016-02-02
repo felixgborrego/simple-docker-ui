@@ -12,8 +12,6 @@ Please note this is a beta version and only provides a basic set of features.
 I'm actively working to add new features and bug fixing.
 Any feedback is more than welcome!
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/felixgborrego/docker-ui-chrome-app)
-
 ![Home](docs/screenshots/home.png)
 
 ![Container](docs/screenshots/container.png)
