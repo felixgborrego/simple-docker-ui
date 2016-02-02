@@ -120,8 +120,8 @@ object SettingsPageRender {
     .initialState(State(Info()))
     .backend(new Backend(_))
     .render((P, S, B) => {
-    vdom(S, B)
-  }).componentWillMount(_.backend.willMount)
+      vdom(S, B)
+    }).componentWillMount(_.backend.willMount)
     .build
 
 
@@ -181,9 +181,27 @@ object SettingsPageRender {
             )
           )
         )
+      ),
+      <.div(^.className := "panel panel-default",
+        <.div(^.className := "panel-heading",
+          <.h3(^.className := "panel-title", <.i(^.className := "fa wrench"), " Want to help?")
+        ),
+        <.div(^.className := "list-group",
+          <.div(^.className := "list-group-item",
+            <.p(^.className := "list-group-item-text",
+              " Please note this is a beta version, ",
+              <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/issues", ^.target := "blank", "any feedback is more than welcome!")
+            ),
+            <.p(^.className := "list-group-item-text", "You can collaborate by reporting issues, sending PR or making a small donation"),
+              <.a(^.href:="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&encrypted=-----BEGIN%20PKCS7-----MIIHTwYJKoZIhvcNAQcEoIIHQDCCBzwCAQExggEwMIIBLAIBADCBlDCBjjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtQYXlQYWwgSW5jLjETMBEGA1UECxQKbGl2ZV9jZXJ0czERMA8GA1UEAxQIbGl2ZV9hcGkxHDAaBgkqhkiG9w0BCQEWDXJlQHBheXBhbC5jb20CAQAwDQYJKoZIhvcNAQEBBQAEgYBBO1k%2BsRqC%2FWO%2Fzt%2FoSaJGZ7VnfF0Z4G%2FwobMm7i%2FeM51eNHRYubzOD859lgIK2iWox2%2Fw8a0j7iL4NSEDysptOl%2Bxhnx51zV2FvRO7tlSCQOa0X%2FUbmOZkvlGR1afVJP%2BLy63dyAfXneDSpGxtuqm0lcX8dmrRHfjGoe96PD9szELMAkGBSsOAwIaBQAwgcwGCSqGSIb3DQEHATAUBggqhkiG9w0DBwQIr5uax67J%2FGWAgag9JyAAy8U5pfrBsds6S6BzVR7qUNCuRupr5%2B1n4VJpuUsLcfc8Sbe9wnSQW7zJf36outRgKM3XPDDPRSsUB9RbbR7HONOygo3qEFp0E0M%2FABxtBymFyt7Z7qLGkUAn55zUMVfJ%2FU3p%2FMelbCV%2Bp%2FjS39f5Ma51n83quXZidJeOa586xdeEaXqeaZBob9gAvh6DOxXlT2yOQ%2BpH2En1a8QQ4NGCl94cxbygggOHMIIDgzCCAuygAwIBAgIBADANBgkqhkiG9w0BAQUFADCBjjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtQYXlQYWwgSW5jLjETMBEGA1UECxQKbGl2ZV9jZXJ0czERMA8GA1UEAxQIbGl2ZV9hcGkxHDAaBgkqhkiG9w0BCQEWDXJlQHBheXBhbC5jb20wHhcNMDQwMjEzMTAxMzE1WhcNMzUwMjEzMTAxMzE1WjCBjjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtQYXlQYWwgSW5jLjETMBEGA1UECxQKbGl2ZV9jZXJ0czERMA8GA1UEAxQIbGl2ZV9hcGkxHDAaBgkqhkiG9w0BCQEWDXJlQHBheXBhbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMFHTt38RMxLXJyO2SmS%2BNdl72T7oKJ4u4uw%2B6awntALWh03PewmIJuzbALScsTS4sZoS1fKciBGoh11gIfHzylvkdNe%2FhJl66%2FRGqrj5rFb08sAABNTzDTiqqNpJeBsYs%2Fc2aiGozptX2RlnBktH%2BSUNpAajW724Nv2Wvhif6sFAgMBAAGjge4wgeswHQYDVR0OBBYEFJaffLvGbxe9WT9S1wob7BDWZJRrMIG7BgNVHSMEgbMwgbCAFJaffLvGbxe9WT9S1wob7BDWZJRroYGUpIGRMIGOMQswCQYDVQQGEwJVUzELMAkGA1UECBMCQ0ExFjAUBgNVBAcTDU1vdW50YWluIFZpZXcxFDASBgNVBAoTC1BheVBhbCBJbmMuMRMwEQYDVQQLFApsaXZlX2NlcnRzMREwDwYDVQQDFAhsaXZlX2FwaTEcMBoGCSqGSIb3DQEJARYNcmVAcGF5cGFsLmNvbYIBADAMBgNVHRMEBTADAQH%2FMA0GCSqGSIb3DQEBBQUAA4GBAIFfOlaagFrl71%2Bjq6OKidbWFSE%2BQ4FqROvdgIONth%2B8kSK%2F%2FY%2F4ihuE4Ymvzn5ceE3S%2FiBSQQMjyvb%2Bs2TWbQYDwcp129OPIbD9epdr4tJOUNiSojw7BHwYRiPh58S1xGlFgHFXwrEBb3dgNbMUa%2Bu4qectsMAXpVHnD9wIyfmHMYIBmjCCAZYCAQEwgZQwgY4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEUMBIGA1UEChMLUGF5UGFsIEluYy4xEzARBgNVBAsUCmxpdmVfY2VydHMxETAPBgNVBAMUCGxpdmVfYXBpMRwwGgYJKoZIhvcNAQkBFg1yZUBwYXlwYWwuY29tAgEAMAkGBSsOAwIaBQCgXTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xNjAxMTMxNjEwNTJaMCMGCSqGSIb3DQEJBDEWBBQlcTUPQFOMVY1dd8Yr%2BYgcWdYV2zANBgkqhkiG9w0BAQEFAASBgBPywcwJb0JCu2RFOOeqioqlJ759cbYU2Rvy3LYUtf8ZykxvPjFTXSWWTzXvOPFo3Vy2Bup4UnWzmijBTv%2FFNjEc%2FuMkm%2B8ZD9EflfZy8hnpByMZLlIYgTLIBW2uUsBqJ3mMclRa2vLtVQirCulL7YbuoewWmJ0kgPBuZlb0bSNn-----END%20PKCS7-----", ^.target:="_blank",
+                <.img( ^.src := "/img/btn_donate_SM.gif", ^.border := "0",^.width:= "74px", ^.height:= "21px")
+              )
+            )
+          )
+        )
       )
     )
-  )
+
 
 
 }
