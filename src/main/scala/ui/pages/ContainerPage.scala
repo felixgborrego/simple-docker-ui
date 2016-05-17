@@ -46,7 +46,7 @@ object ContainerPage {
       }
 
       result.onSuccess { case _ =>
-        t.modState(s => s.copy(tabSelected = TabTerminal))
+        showTab(TabInfo)
       }
     }
 
@@ -76,7 +76,7 @@ object ContainerPage {
 
     def showTab(tab: ContainerPageTab) = {
       tab match {
-        case TabStats => startStats()
+        case TabInfo => startStats()
         case _ => stopStats()
       }
       t.modState(s => s.copy(tabSelected = tab))
@@ -103,8 +103,9 @@ object ContainerPage {
         case TabChanges => Seq(
           (s"docker diff $id", "List the changed files and directories in a container᾿s filesystem")
         )
-        case TabTop => Seq(
-          (s"docker top $id", "Display the running processes of a container")
+        case TabInfo => Seq(
+          (s"docker top $id", "Display the running processes of the container"),
+          (s"docker stats $id", "Display the stats of the container")
         )
         case _ => Seq.empty
       }
@@ -173,7 +174,7 @@ object ContainerPageRender {
     val networkInfo = Map(
       "Ip" -> containerInfo.NetworkSettings.IPAddress,
       "Port Mapping" -> ports,
-      "Links" ->  containerInfo.HostConfig.links
+      "Links" -> containerInfo.HostConfig.links
     ) ++
       containerInfo.Volumes.map { case (k, v) => ("volume: " + k, v) }
 
@@ -232,7 +233,7 @@ object ContainerPageRender {
     ))
 
 
-  def vDomTabs(S: State, B: Backend) = {
+  def vDomTabs(S: State, B: Backend): ReactElement = {
     val terminalInfo = S.info.map { info =>
       TerminalInfo(stdinOpened = info.Config.OpenStdin && info.State.Running,
         stdinAttached = info.Config.AttachStdin,
@@ -243,28 +244,23 @@ object ContainerPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.ul(^.className := "nav nav-tabs",
+          S.info.exists(_.State.Running) ?= <.li(^.role := "presentation", (S.tabSelected == TabInfo) ?= (^.className := "active"),
+            <.a(^.onClick --> B.showTab(TabInfo), <.i(^.className := "fa fa-bar-chart"), " Stats")
+          ),
           <.li(^.role := "presentation", (S.tabSelected == TabTerminal) ?= (^.className := "active"),
             <.a(^.onClick --> B.showTab(TabTerminal), ^.className := "glyphicon glyphicon-console",
               " Terminal ",
               <.i(^.className := (if (terminalInfo.stdinOpened) "fa fa-chain" else "fa fa-chain-broken"))
             )
           ),
-          S.info.exists(_.State.Running) ?= <.li(^.role := "presentation", (S.tabSelected == TabStats) ?= (^.className := "active"),
-            <.a(^.onClick --> B.showTab(TabStats), <.i(^.className := "fa fa-bar-chart"), " Stats")
-          ),
-          S.top.map(s =>
-            <.li(^.role := "presentation", (S.tabSelected == TabTop) ?= (^.className := "active"),
-              <.a(^.onClick --> B.showTab(TabTop), ^.className := "glyphicon glyphicon-transfer", " Top")
-            )),
           <.li(^.role := "presentation", (S.tabSelected == TabChanges) ?= (^.className := "active"),
             <.a(^.onClick --> B.showTab(TabChanges), <.i(^.className := "fa fa-history"), " File system changes")
           )
         ),
         <.div(^.className := "panel-body panel-config",
           (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
-          (S.tabSelected == TabTop && S.top.isDefined) ?= S.top.map(vdomTop).get,
-          (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _)),
-          (S.tabSelected == TabStats) ?= vdomStats(S, B)
+          (S.tabSelected == TabInfo) ?= vdomInfo(S, B),
+          (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
         )
       ),
       <.div(^.className := "panel-footer docker-cli",
@@ -273,7 +269,7 @@ object ContainerPageRender {
           <.div(
             <.span(^.className := "glyphicon glyphicon-console pull-left"),
             <.i(<.code(^.className := cmdName)(cmd), <.span(^.className := "small text-muted", info)),
-            <.a(^.onClick --> CopyPasteUtil.copyToClipboard(cmdName)," ", <.i(^.className := "fa fa-clipboard"))
+            <.a(^.onClick --> CopyPasteUtil.copyToClipboard(cmdName), " ", <.i(^.className := "fa fa-clipboard"))
           )
         }
       )
@@ -308,16 +304,17 @@ object ContainerPageRender {
     }
   }
 
+  def vdomInfo(S: State, B: Backend) =
+    <.div(
+      vdomStats(S, B),
+      S.top.map(vdomTop)
+    )
 }
 
 sealed trait ContainerPageTab
 
 case object TabNone extends ContainerPageTab
 
+case object TabInfo extends ContainerPageTab
 case object TabTerminal extends ContainerPageTab
-
-case object TabTop extends ContainerPageTab
-
 case object TabChanges extends ContainerPageTab
-
-case object TabStats extends ContainerPageTab

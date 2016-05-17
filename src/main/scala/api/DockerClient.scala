@@ -54,8 +54,7 @@ case class DockerClient(connection: Connection) {
     test <- ping()
     info <- info()
     version <- version()
-    containers <- containers(all = false, extraInfo = false)
-  } yield DockerMetadata(connection, info, version, containers)
+  } yield DockerMetadata(connection, info, version, containers = Seq.empty)
 
   def containersRunningWithExtraInfo(): Future[Seq[Container]] =
     containers(all = false, extraInfo = true)
