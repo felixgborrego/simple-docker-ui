@@ -28,7 +28,7 @@ object StringUtils {
   }
 
 
-  def subId(id: String) = id.take(12)
+  def subId(id: String) = id.replaceFirst("sha256:","").take(12)
 
   // quick hack to format to without using java DecimalFormat #.##%
   def toPercent(num:Double):String = {
