@@ -24,6 +24,7 @@ object ImagesPage extends Page {
                    searchText: String = "",
                    imageToPull: Option[ImageSearch] = None,
                    deleting: Boolean = false,
+                   message: Option[String] = None,
                    error: Option[String] = None) {
     def searchIcon =
       if (searching)
@@ -89,8 +90,14 @@ object ImagesPage extends Page {
 
     override def imagePulled(): Unit = refresh()
 
-    def garbageCollection(): Future[Unit] = t.props.ref.client.get.garbageCollectionImages().map { images =>
-      t.modState(s => s.copy(localImages = images))
+    def garbageCollection(): Future[Unit] = t.props.ref.client.get.garbageCollectionImages { message =>
+      t.modState(s => s.copy(message = Some(message)))
+    }.map { images =>
+      t.modState(s => s.copy(localImages = images, message = None))
+    }.recover {
+      case ex: Exception =>
+        t.modState(s => s.copy(message = Some(ex.getMessage)))
+        log.error("ImagesPage", "garbageCollection", ex)
     }
   }
 
@@ -115,6 +122,7 @@ object ImagesPageRender {
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_)),
+    S.message.map(Alert(_, None, "info")),
     remoteSearch(S, P, B),
     table("Local images", S, P, B),
     S.imageToPull.map(image => PullModalDialog(B, image, P.ref))
