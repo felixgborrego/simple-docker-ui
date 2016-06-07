@@ -14,6 +14,7 @@ object googleAnalytics {
 
   def sendEvent(category: String, action: String, label: String = "") = tracker.sendEvent(category, action, label)
 
+  def sendException(ex: String) = tracker.sendException(ex, false)
 
   object EventCategory {
     val Connection = "Connection"
@@ -59,6 +60,8 @@ object interface extends js.GlobalScope {
       def sendAppView(name: String): Unit = js.native
 
       def sendEvent(category: String, action: String, label: String): Unit = js.native
+
+      def sendException(ex: String, fatal: Boolean): Unit = js.native
     }
 
 }
