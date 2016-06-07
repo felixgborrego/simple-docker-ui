@@ -6,11 +6,12 @@ import model.stats.ContainerStats
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle.default._
+import util.CurrentDockerApiVersion.VersionBroadcaster
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.googleAnalytics._
 import util.logger._
-import util.{EventsCustomParser, FutureUtils, StatsCustomParser}
+import util.{CurrentDockerApiVersion, EventsCustomParser, FutureUtils, StatsCustomParser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
@@ -97,7 +98,7 @@ case class DockerClient(connection: Connection) {
         log.info(s"Unable to delete $containerId} ${ex.xhr.responseText}")
     }
 
-  def removeImage(imageId: String): Future[Unit] =
+  private def removeImage(imageId: String): Future[Unit] = {
     Ajax.delete(s"$url/images/$imageId", timeout = HttpTimeOut).map { xhr =>
       log.info("[dockerClient.removeImage] return: " + xhr.readyState)
     }.transform(identity, ex => ex match {
@@ -105,44 +106,103 @@ case class DockerClient(connection: Connection) {
         log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
         new Exception(ex.xhr.responseText)
     })
+  }
 
-  def garbageCollectionImages(): Future[Seq[Image]] = {
-    log.info("Staring garbageCollectionImages")
-    sendEvent(EventCategory.Image, EventAction.GC)
-    val usedImagesId: Future[Seq[String]] = for {
-      containers <- containers(all = true, extraInfo = false)
-      containersInfo <-  FutureUtils.sequenceWithDelay(containers.toList.map(container => () => containerInfo(container.Id)))
-    } yield containersInfo.map(_.Image)
+  def removeImage(image: Image): Future[Unit] = {
+    val imageId = image.Id
+    val imagesToDelete = image.RepoTags.drop(1) :+ imageId
+    val tasks = imagesToDelete.map(imageId => () => removeImage(imageId)).toList
+    FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay).map(_ => ())
+  }
 
-    // process the tree removing any used Image and its parents
-    def filterUsed(images: Seq[Image], imageId: String): Seq[Image] = {
-      val imageFound = images.filter(_.Id == imageId)
-      val remainingImages = images.diff(imageFound)
-      imageFound.headOption match {
-        case None => remainingImages
-        case Some(image) =>
-          // recursively remove parentImages
-          filterUsed(remainingImages, image.ParentId)
-      }
-    }
+  def garbageCollectionImages(status: String => Unit): Future[Seq[Image]] = {
+    if (!CurrentDockerApiVersion.checkSupportGC()) {
+      Future.failed(new Exception(s"Unsupported operation. API version 1.23+ required"))
+    } else {
+      log.info("Staring garbageCollectionImages")
 
 
-    val imagesToGC = for {
-      all <- images(all = true)
-      usedIds <- usedImagesId
-    } yield {
-        log.info(s"Calculating imagesToGC all: ${all.size}, usedIds: ${usedIds.size} ")
-        val noUsedImages = usedIds.foldLeft(all) {
-          case (remaining, imageId) => filterUsed(remaining, imageId)
+      sendEvent(EventCategory.Image, EventAction.GC)
+
+      status(s"Fetching active containers")
+      val usedImagesId: Future[Seq[String]] = for {
+        containers <- containers(all = true, extraInfo = false)
+      } yield containers.map(_.ImageID)
+
+
+      // process the tree removing any used Image and its parents
+      def filterUsed(images: Seq[Image], imageId: String): Seq[Image] = {
+        val imageFound = images.filter(_.Id == imageId)
+        val remainingImages = images.diff(imageFound)
+        imageFound.headOption match {
+          case None => remainingImages
+          case Some(image) =>
+            // recursively remove parentImages
+            filterUsed(remainingImages, image.ParentId)
         }
-        noUsedImages.map(_.Id)
       }
 
-    imagesToGC.flatMap { images =>
-      log.info(s"imagesToGC: ${images.size} ")
-     val tasks = images.map(image => ()  => removeImage(image)).toList
-      FutureUtils.sequenceWithDelay(tasks)
-    }.flatMap(_ => images())
+
+      val imagesToGC = for {
+        all <- images(all = true)
+        usedIds <- usedImagesId
+      } yield {
+        status(s"Searching for images to GC")
+        log.info(s"Calculating imagesToGC all: ${all.size}, usedIds: ${usedIds.size} ")
+        usedIds.foldLeft(all) {
+          case (remaining, imageId) =>
+            filterUsed(remaining, imageId)
+        }
+      }
+
+      // fetch the parents for every image to GC
+      val imagesWithParents = imagesToGC.flatMap { unorderedImages =>
+        status(s"Images to GC: ${unorderedImages.size}")
+        log.info(s"imagesToGC: ${unorderedImages.size} ")
+        val imagesWithParents = unorderedImages.map(image => () => Future.successful(ImageWithParents(image, getImageParents(unorderedImages, image)))).toList
+        FutureUtils.sequenceWithDelay(imagesWithParents, FutureUtils.SmallDelay)
+      }
+
+      // order based on parents
+      val orderedImages: Future[List[Image]] = imagesWithParents.map { unorderedImages =>
+        //  status(s"Images to GC: ${unorderedImages.size}")
+        //log.info(s"imagesToGC: ${unorderedImages.size} ")
+        log.info(s"Ordering images before GC...")
+        // First need to order from top to button
+
+        val imagesOrdered = unorderedImages.sortWith(compareImages).map(_.image)
+
+        status(s"Images Ordered and ready to GC: ${unorderedImages.size}")
+        log.info("images ordered:")
+        imagesOrdered
+      }
+
+      val tasksFut = orderedImages.map { imagesToGC =>
+        val tasks = imagesToGC.map { image => () => {
+          status(s"Removing ${image.id}/ ${image.RepoTags.mkString(" ")}")
+          removeImage(image)
+        }
+
+        }
+        FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay)
+      }.flatMap(identity)
+
+      tasksFut.flatMap(_ => images())
+
+    }
+  }
+
+  case class ImageWithParents(image: Image, parents: List[String])
+  def getImageParents(all: Seq[Image], image: Image): List[String] = {
+    all.find(_.Id == image.ParentId) match {
+      case None => image.Id :: Nil
+      case Some(parentImage) => image.Id :: getImageParents(all, parentImage)
+    }
+  }
+
+  // an image is before another if there is no relation ship between them
+  def compareImages(image1: ImageWithParents, image2: ImageWithParents) = {
+    !image2.parents.exists(_ == image1.image.Id)
   }
 
 
@@ -215,7 +275,9 @@ case class DockerClient(connection: Connection) {
   private def version(): Future[Version] =
     Ajax.get(s"${connection.url}/version", timeout = PingTimeOut).map { xhr =>
       log.info("[dockerClient.version] return: " + xhr.responseText)
-      read[Version](xhr.responseText)
+      val version = read[Version](xhr.responseText)
+      VersionBroadcaster.publishVersion(version)
+      version
     }
 
   def attachToContainer(containerId: String): WebSocket = {

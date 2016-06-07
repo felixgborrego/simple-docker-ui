@@ -75,9 +75,12 @@ case class Version(ApiVersion: String,
                    Os: String,
                    Version: String) {
 
-  def apiVersion: (Int, Int) = ApiVersion.split( """\.""").map(_.toInt) match {
+  lazy val apiVersion: (Int, Int) = ApiVersion.split( """\.""").map(_.toInt) match {
     case Array(mayor, minor, _*) => (mayor, minor)
   }
+
+  def mayorVersion = apiVersion._1
+  def minorVersion = apiVersion._2
 }
 
 case class Container(Command: String,

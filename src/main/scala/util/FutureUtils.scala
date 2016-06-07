@@ -11,13 +11,13 @@ object FutureUtils {
   type LazyFuture[T] = () => Future[T]
 
   // Execute a list of LazyFutures, continuing and ignoring if there is any error.
-  def sequenceWithDelay[T](tasks: List[LazyFuture[T]])(implicit executionContext: ExecutionContext): Future[List[T]] = {
+  def sequenceWithDelay[T](tasks: List[LazyFuture[T]], ms: Int)(implicit executionContext: ExecutionContext): Future[List[T]] = {
     val p = Promise[List[T]]()
 
     def exec(acc: List[T], remaining: List[LazyFuture[T]]): Unit = {
       remaining match {
         case head :: tail =>
-          delay(DefaultDelay) { () =>
+          delay(ms) { () =>
             head().map { result =>
               exec(acc :+ result, tail)
             }.recover {
@@ -36,7 +36,10 @@ object FutureUtils {
     p.future
   }
 
-  val DefaultDelay = 100
+  // task like Image GC, need some delay to keep responsive the ui
+  val LongDelay = 200
+  val SmallDelay = 20
+
 
   def delay[T](ms: Int)(task: () => Unit) = dom.setTimeout(task, ms)
 }
