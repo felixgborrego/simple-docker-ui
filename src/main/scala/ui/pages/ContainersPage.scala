@@ -60,12 +60,12 @@ object ContainersPageRender {
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    table("glyphicon glyphicon-transfer", "Container Running", S.running, showGC = false, showRefresh=true, P, B),
+    table("glyphicon glyphicon-transfer", "Containers running", S.running, showGC = false, showRefresh=true, P, B),
     table("glyphicon glyphicon-equalizer", "History", S.history, showGC = true, showRefresh = false, P, B)
   )
 
   def table(iconClassName: String, title: String, containers: Seq[Container], showGC: Boolean, showRefresh: Boolean, props: Props, B: Backend) =
-    <.div(^.className := "container  col-sm-12",
+    <.div(^.className := "container col-sm-12",
       <.div(^.className := "panel panel-default  bootcards-summary",
         <.div(^.className := "panel-heading clearfix",
           <.h3(^.className := "panel-title pull-left")(<.span(^.className := iconClassName), " " + title),

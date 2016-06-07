@@ -35,7 +35,7 @@ object ContainerPage {
       val result = for {
         info <- client.containerInfo(t.props.containerId)
         top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
-        changes <- client.containerChanges(t.props.containerId)
+        changes <- if (info.State.Running) client.containerChanges(t.props.containerId) else Future.successful(Seq.empty)
       } yield t.modState(s => s.copy(Some(info), top, changes, error = None))
 
 
