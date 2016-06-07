@@ -2,6 +2,7 @@ package ui
 
 import japgolly.scalajs.react._
 import org.scalajs.dom
+import util.CurrentDockerApiVersion
 import util.chrome.api._
 import util.logger._
 
@@ -15,6 +16,7 @@ object MainApp extends JSApp {
   override def main(): Unit = {
     log.info(s"Staring app ${chrome.runtime.getManifest().version}")
     val ui = Workbench()
+    CurrentDockerApiVersion.register()
     React.render(ui, dom.document.getElementById("container"))
   }
 }
