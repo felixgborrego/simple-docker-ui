@@ -43,7 +43,7 @@ object ImagePage {
 
     def removeImage(): Future[Unit] = {
       sendEvent(EventCategory.Image, EventAction.Remove)
-      t.props.ref.client.get.removeImage(t.props.image.Id).map { info =>
+      t.props.ref.client.get.removeImage(t.props.image).map { info =>
         t.props.ref.show(ImagesPage)
       }.recoverWith {
         case ex: Exception =>

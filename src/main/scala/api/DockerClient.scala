@@ -112,7 +112,7 @@ case class DockerClient(connection: Connection) {
     val imageId = image.Id
     val imagesToDelete = image.RepoTags.drop(1) :+ imageId
     val tasks = imagesToDelete.map(imageId => () => removeImage(imageId)).toList
-    FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay).map(_ => ())
+    FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay, ignoreErrors = false).map(_ => ())
   }
 
   def garbageCollectionImages(status: String => Unit): Future[Seq[Image]] = {
@@ -160,7 +160,7 @@ case class DockerClient(connection: Connection) {
         status(s"Images to GC: ${unorderedImages.size}")
         log.info(s"imagesToGC: ${unorderedImages.size} ")
         val imagesWithParents = unorderedImages.map(image => () => Future.successful(ImageWithParents(image, getImageParents(unorderedImages, image)))).toList
-        FutureUtils.sequenceWithDelay(imagesWithParents, FutureUtils.SmallDelay)
+        FutureUtils.sequenceWithDelay(imagesWithParents, FutureUtils.SmallDelay, ignoreErrors = false)
       }
 
       // order based on parents
@@ -184,7 +184,7 @@ case class DockerClient(connection: Connection) {
         }
 
         }
-        FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay)
+        FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay, ignoreErrors = false)
       }.flatMap(identity)
 
       tasksFut.flatMap(_ => images())

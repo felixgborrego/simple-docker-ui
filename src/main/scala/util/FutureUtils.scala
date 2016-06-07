@@ -11,7 +11,7 @@ object FutureUtils {
   type LazyFuture[T] = () => Future[T]
 
   // Execute a list of LazyFutures, continuing and ignoring if there is any error.
-  def sequenceWithDelay[T](tasks: List[LazyFuture[T]], ms: Int)(implicit executionContext: ExecutionContext): Future[List[T]] = {
+  def sequenceWithDelay[T](tasks: List[LazyFuture[T]], ms: Int, ignoreErrors: Boolean)(implicit executionContext: ExecutionContext): Future[List[T]] = {
     val p = Promise[List[T]]()
 
     def exec(acc: List[T], remaining: List[LazyFuture[T]]): Unit = {
@@ -21,9 +21,10 @@ object FutureUtils {
             head().map { result =>
               exec(acc :+ result, tail)
             }.recover {
-              case NonFatal(ex) =>
+              case NonFatal(ex) if ignoreErrors =>
                 log.info(s"Unable to process, Future Skipped - ${ex.getMessage}")
                 exec(acc, tail)
+              case NonFatal(ex) => p.failure(ex)
             }
           }
 
