@@ -117,7 +117,7 @@ case class DockerClient(connection: Connection) {
 
   def garbageCollectionImages(status: String => Unit): Future[Seq[Image]] = {
     if (!CurrentDockerApiVersion.checkSupportGC()) {
-      Future.failed(new Exception(s"Unsupported operation. API version 1.23+ required"))
+      Future.failed(new Exception(s"Unsupported operation in API ${CurrentDockerApiVersion.currentVersion}. API version 1.23+ required"))
     } else {
       log.info("Staring garbageCollectionImages")
 

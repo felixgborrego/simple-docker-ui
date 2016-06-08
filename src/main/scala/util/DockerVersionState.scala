@@ -17,6 +17,8 @@ object CurrentDockerApiVersion {
       log.info(s"Using api version: $ApiVersionMayor.$APiVersionMinor")
     }
 
+  def currentVersion = s"$ApiVersionMayor.$APiVersionMinor"
+
   // container.ImageId is required in /containers/id/json - Added in API version 1.23
   def checkSupportGC(): Boolean = checkVersion(
     mayorRequired = 1,
