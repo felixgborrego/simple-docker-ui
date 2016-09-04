@@ -45,6 +45,15 @@ object ConfigStorage {
     p.future
   }
 
+  private def remove(key: String): Future[Unit] = {
+    log.info(s"Removing $key")
+    val p = Promise[Unit]()
+    chrome.storage.local.remove(key, { () =>
+      p.success(log.info(s"'$key' Removed"))
+    })
+    p.future
+  }
+
   def defaultUrl: Future[String] = os.map {
     case "mac" => DefaultMacUrl
     case "win" => DefaultWinUrl
@@ -74,4 +83,16 @@ object ConfigStorage {
     }
 
   def saveUrls(urls:Seq[String]) = save(ParamSavedUrlConnection,urls.mkString(Separator))
+
+  def saveRunCommand(containerId: String, command: String): Future[Unit] = {
+    save(containerId, command)
+  }
+
+  def getRunCommand(containerId: String): Future[Option[String]] = get(containerId)
+    .map(Some(_))
+    .recover { case _ => None }
+
+  def removeRunCommand(containerId: String): Future[Unit] = {
+    remove(containerId)
+  }
 }

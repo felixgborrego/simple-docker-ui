@@ -24,6 +24,8 @@ object api extends js.GlobalScope {
     def set(map: js.Dynamic, callback: js.Function0[Any]): Unit = js.native
 
     def get(key: String, callback: js.Function1[js.Dynamic, Any]): Unit = js.native
+
+    def remove(key: String, callback: js.Function0[Any]): Unit = js.native
   }
 
   @js.native

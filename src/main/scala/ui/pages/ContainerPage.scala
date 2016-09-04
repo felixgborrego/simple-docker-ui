@@ -1,6 +1,6 @@
 package ui.pages
 
-import api.ConnectedStream
+import api.{ConfigStorage, ConnectedStream}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model.stats.ContainerStats
@@ -15,6 +15,7 @@ import util.{CopyPasteUtil, StringUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.scalajs.js
 
 object ContainerPage {
 
@@ -25,7 +26,8 @@ object ContainerPage {
                    actionStopping: Boolean = false,
                    stats: Option[ContainerStats] = None,
                    statsConnectedStream: Option[ConnectedStream] = None,
-                   tabSelected: ContainerPageTab = TabNone)
+                   tabSelected: ContainerPageTab = TabNone,
+                   runCommand: Option[String] = None)
 
   case class Props(ref: WorkbenchRef, containerId: String)
 
@@ -36,7 +38,8 @@ object ContainerPage {
         info <- client.containerInfo(t.props.containerId)
         top <- if (info.State.Running) client.top(t.props.containerId).map(Some(_)) else Future(Option.empty)
         changes <- if (info.State.Running) client.containerChanges(t.props.containerId) else Future.successful(Seq.empty)
-      } yield t.modState(s => s.copy(Some(info), top, changes, error = None))
+        runCommand <- ConfigStorage.getRunCommand(t.props.containerId)
+      } yield t.modState(s => s.copy(Some(info), top, changes, error = None, runCommand = runCommand))
 
 
       result.onFailure {
@@ -71,6 +74,7 @@ object ContainerPage {
 
     def remove() =
       t.props.ref.client.get.removeContainer(t.props.containerId).map { info =>
+        ConfigStorage.removeRunCommand(t.props.containerId)
         t.props.ref.show(ContainersPage)
       }
 
@@ -181,7 +185,7 @@ object ContainerPageRender {
 
     <.div(
       InfoCard(generalInfo, InfoCard.SMALL, None,
-        imageInfo(containerInfo, B),
+        Seq(imageInfo(containerInfo, B)) ++ S.runCommand.map(runCommand(_)),
         vdomCommands(S, B)
       ),
       InfoCard(executionInfo),
@@ -189,7 +193,7 @@ object ContainerPageRender {
     )
   }
 
-  def imageInfo(containerInfo: ContainerInfo, B: Backend) = Seq(
+  def imageInfo(containerInfo: ContainerInfo, B: Backend) = {
     <.div(^.className := "list-group",
       <.div(^.className := "list-group-item",
         <.i(^.className := "list-group-item-text")("Image"),
@@ -201,8 +205,19 @@ object ContainerPageRender {
         )
       )
     )
-  )
+  }
 
+  def runCommand(cmd: String) = {
+    val cmdName = cmd.split(" ").head
+    <.div(^.className := "list-group",
+      <.div(^.className := "list-group-item",
+        <.i(^.className := "list-group-item-text")("Run command"),
+        <.p(^.className := s"${cmdName} list-group-item-heading", ^.wordWrap := "break-word", cmd,
+          <.a(^.onClick --> CopyPasteUtil.copyToClipboard(cmdName), " ", <.i(^.className := "fa fa-clipboard", ^.style := js.Dictionary("opacity" -> "1").asInstanceOf[js.Object]))
+        )
+      )
+    )
+  }
 
   def vdomServiceUrl(containerInfo: ContainerInfo, P: Props) = {
     val ip = P.ref.connection.map(_.ip).getOrElse("")
