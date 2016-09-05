@@ -68,6 +68,16 @@ object PullModalDialog {
       }
       p.future
     }
+
+    def dockerHubLink(): String = {
+      val directUrl = "https://hub.docker.com/r/%s/"
+      val searchUrl = "https://hub.docker.com/search/?isAutomated=0&isOfficial=0&q=%s"
+      t.props.image.name.split("/") match {
+        case Array(b) => directUrl.format("_/" + b)
+        case Array(a, b) => directUrl.format(a + "/" + b)
+        case _ => searchUrl.format(t.props.image.name)
+      }
+    }
   }
 
   def apply(actionsBackend: ActionsBackend, image: ImageSearch, ref: WorkbenchRef) = {
@@ -131,7 +141,7 @@ object PullModalDialogRender {
             P.image.is_official ?= <.i(^.className := "glyphicon glyphicon-bookmark pull-left"),
             (P.image.star_count == 0) ?= <.div(^.className := "pull-right", <.i(^.className := "glyphicon glyphicon-star-empty"), P.image.star_count),
             (P.image.star_count > 0) ?= <.div(^.className := "pull-right", <.i(^.className := "glyphicon glyphicon-star"), P.image.star_count),
-            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"https://hub.docker.com/search/?q=${P.image.name}&searchfield:=")("View in Docker.com")
+            <.a(^.className := "btn btn-link btn-xs pull-right", ^.target := "_blank", ^.href := s"${B.dockerHubLink()}")("View in Docker.com")
 
           )
         )
