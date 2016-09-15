@@ -1,5 +1,6 @@
 package ui.widgets.dialogs
 
+import api.ConfigStorage
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import model._
@@ -178,6 +179,7 @@ object ContainerRequestForm {
           if (response.Id.isEmpty) {
             t.modState(s => s.copy(warnings = response.Warnings))
           } else {
+            ConfigStorage.saveRunCommand(response.Id, textCommand)
             dom.document.getElementById("open-modal-dialog").asInstanceOf[dom.raw.HTMLButtonElement].click()
             dom.setTimeout(() => t.props.actionsBackend.newContainerCreated(response.Id), 1) // delay after animation
           }
