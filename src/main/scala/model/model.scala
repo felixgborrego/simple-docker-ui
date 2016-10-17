@@ -87,12 +87,12 @@ case class Container(Command: String,
                      Created: Int,
                      Id: String,
                      Image: String,
-                     ImageID: String = "",
                      Status: String,
                      Names: Seq[String],
+                     ImageID: String = "",
                      SizeRootFs: Int = 0,
                      SizeRw: Int = 0,
-                     val Ports: Seq[Port] = Seq.empty
+                     Ports: Seq[Port] = Seq.empty
                       ) {
   def id = subId(Id)
 
