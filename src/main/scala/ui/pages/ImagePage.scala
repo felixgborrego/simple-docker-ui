@@ -6,7 +6,7 @@ import model._
 import ui.WorkbenchRef
 import ui.widgets._
 import ui.widgets.dialogs.ContainerRequestForm
-import util.googleAnalytics._
+import util.{EventAction, EventCategory, PlatformService}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,12 +37,12 @@ object ImagePage {
     }
 
     def showCreateDialog(): Future[Unit] = Future {
-      sendEvent(EventCategory.Image, EventAction.Show, "CreateDialog")
+      PlatformService.current.sendEvent(EventCategory.Image, EventAction.Show, "CreateDialog")
       t.modState(_.copy(showCreateDialog = true))
     }
 
     def removeImage(): Future[Unit] = {
-      sendEvent(EventCategory.Image, EventAction.Remove)
+      PlatformService.current.sendEvent(EventCategory.Image, EventAction.Remove)
       t.props.ref.client.get.removeImage(t.props.image).map { info =>
         t.props.ref.show(ImagesPage)
       }.recoverWith {
@@ -60,7 +60,7 @@ object ImagePage {
 
     override def newContainerCreated(containerId: String) = {
       log.info(s"Container created $containerId")
-      sendEvent(EventCategory.Image, EventAction.Start)
+      PlatformService.current.sendEvent(EventCategory.Image, EventAction.Start)
       t.props.ref.show(ContainerPage(containerId, t.props.ref))
     }
   }

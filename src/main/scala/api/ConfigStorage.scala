@@ -1,12 +1,10 @@
 package api
 
 import model.Connection
-import util.chrome.api._
-import util.logger._
+import util.PlatformService
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
-import scala.scalajs.js
+import scala.concurrent.Future
 
 object ConfigStorage {
 
@@ -22,57 +20,23 @@ object ConfigStorage {
     .map(url => Some(Connection(url)))
     .recover { case _ => None }
 
-  private def save(key: String, value: String): Future[Unit] = {
-    log.info(s"Saving $key = $value")
-    val p = Promise[Unit]()
-    val jsObject = scalajs.js.Dynamic.literal(key -> value)
-    chrome.storage.local.set(jsObject, { () =>
-      p.success(log.info(s"'$key' Saved"))
-    })
-    p.future
-  }
+  private def save(key: String, value: String): Future[Unit] =
+    PlatformService.current.save(key, value)
 
-  private def get(key: String): Future[String] = {
-    val p = Promise[String]()
-    chrome.storage.local.get(key, { result: js.Dynamic =>
-      val value = result.selectDynamic(key).toString
-      log.info(s"Value recover from local storage: $key = $value")
-      if (value == "undefined")
-        p.failure(new Exception(s"Key $key not found"))
-      else
-        p.success(value)
-    })
-    p.future
-  }
+  private def get(key: String): Future[String] =
+    PlatformService.current.get(key)
 
-  private def remove(key: String): Future[Unit] = {
-    log.info(s"Removing $key")
-    val p = Promise[Unit]()
-    chrome.storage.local.remove(key, { () =>
-      p.success(log.info(s"'$key' Removed"))
-    })
-    p.future
-  }
+  private def remove(key: String): Future[Unit] =
+    PlatformService.current.remove(key)
 
-  def defaultUrl: Future[String] = os.map {
-    case "mac" => DefaultMacUrl
-    case "win" => DefaultWinUrl
-    case "linux" | "openbsd" => DefaultLinuxUrl
-    case _ => ""
-  }
+  def defaultUrl: Future[String] = PlatformService.current.defaultUrl
 
   def isRunningBoot2Docker:Future[Boolean] =  os.map {
     case "mac" | "win" => true
     case _ => false
   }
 
-  private def os: Future[String] = {
-    val p = Promise[String]()
-    chrome.runtime.getPlatformInfo { info: PlatformInfo =>
-      p.success(info.os)
-    }
-    p.future
-  }
+  private def os: Future[String] = PlatformService.current.osName
 
   // Return the list of url already used
   val Separator = "!;!"

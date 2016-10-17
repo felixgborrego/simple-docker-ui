@@ -2,7 +2,8 @@ package util
 
 import scala.scalajs.js
 
-object googleAnalytics {
+// Binding for chrome-platform-analytics
+object GoogleAnalytics {
   val Service = "DockerUI"
   val AnalyticsID = "UA-61270183-1"
 

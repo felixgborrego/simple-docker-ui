@@ -23,11 +23,11 @@ object ContainersPage extends Page {
     def willMount(): Unit = refresh()
 
     def refresh():Future[Unit] = t.props.ref.client.map { client =>
-      client.containerRunning().map { running =>
+      client.containerRunning().flatMap{ running =>
         t.modState(s => s.copy(running = running, error = None))
         client.containersHistory(running).map { history =>
           t.modState(s => s.copy(history = history))
-        }: Unit
+        }
       }.recover{
         case ex: Exception =>
           log.error("ContainersPage", "Unable to get Metadata", ex)

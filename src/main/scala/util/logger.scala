@@ -1,6 +1,5 @@
 package util
 
-import googleAnalytics._
 import org.scalajs.dom.ext.AjaxException
 
 object logger {
@@ -22,7 +21,7 @@ object DefaultLogger {
     }
     println(s"error: $message")
     if (report) {
-      sendException(message)
+      PlatformService.current.sendException(message)
     }
 
   }

@@ -3,15 +3,15 @@ package api
 import api.DockerClientConfig.APIRequired._
 import model._
 import model.stats.ContainerStats
+import org.scalajs.dom.ext.Ajax.InputData
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.raw._
 import upickle.default._
 import util.CurrentDockerApiVersion.VersionBroadcaster
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
-import util.googleAnalytics._
+import util._
 import util.logger._
-import util.{CurrentDockerApiVersion, EventsCustomParser, FutureUtils, StatsCustomParser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
@@ -37,17 +37,40 @@ object DockerClientConfig {
   val KeepInGarbageCollection = 10
 }
 
-case class DockerClient(connection: Connection) {
+trait DockerConnection {
+  val connection: Connection
 
   import DockerClientConfig._
 
-  val url = connection.url + "/" + DockerVersion
-  val urlOptional = connection.url + "/" + DockerOptionalVersion
+  def info: String
+
+  def get(path: String, timeout: Int = HttpTimeOut): Future[Response]
+
+  def post(path: String, data: Option[InputData] = None, headers: Map[String, String] = Map.empty, timeout: Int = HttpTimeOut): Future[Response]
+
+  def delete(path: String, timeout: Int = HttpTimeOut): Future[Response]
+
+  def attachToContainer(containerId: String): Future[BasicWebSocket]
+
+  def pullImage(term: String): EventStream
+
+  def events(update: Seq[DockerEvent] => Unit): ConnectedStream
+
+  def containerStats(containerId: String)(updateUI: (Option[ContainerStats], ConnectedStream) => Unit): Unit
+}
+
+case class Response(responseText: String, statusCode: Int)
+
+
+case class DockerClient(con: DockerConnection) {
+
+  import DockerClientConfig._
+
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#ping-the-docker-server
-  def ping(): Future[Unit] =
-    Ajax.get(url = s"$url/_ping", timeout = PingTimeOut).map { xhr =>
-      log.info("[dockerClient.ping] return: " + xhr.responseText)
+  def ping(): Future[Unit] = con.get(path = "/_ping", timeout = PingTimeOut)
+    .map { xhr =>
+      log.info(s"[dockerClient.ping] return: ${xhr.statusCode} ${xhr.responseText}")
     }
 
 
@@ -55,7 +78,7 @@ case class DockerClient(connection: Connection) {
     test <- ping()
     info <- info()
     version <- version()
-  } yield DockerMetadata(connection, info, version, containers = Seq.empty)
+  } yield DockerMetadata(con.info, info, version, containers = Seq.empty)
 
   def containersRunningWithExtraInfo(): Future[Seq[Container]] =
     containers(all = false, extraInfo = true)
@@ -70,37 +93,40 @@ case class DockerClient(connection: Connection) {
 
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#inspect-a-container
-  def containerInfo(containerId: String): Future[ContainerInfo] =
-    Ajax.get(s"$url/containers/$containerId/json", timeout = HttpTimeOut).map { xhr =>
-      log.debug("[dockerClient.containerInfo]")
-      read[ContainerInfo](xhr.responseText)
-    }
+  def containerInfo(containerId: String): Future[ContainerInfo] = {
+    con.get(path = s"/containers/$containerId/json", timeout = HttpTimeOut)
+      .map { xhr =>
+        log.debug("[dockerClient.containerInfo]")
+        read[ContainerInfo](xhr.responseText)
+      }
+  }
 
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#stop-a-container
-  def stopContainer(containerId: String): Future[ContainerInfo] =
-    Ajax.post(s"$url/containers/$containerId/stop?t=3", timeout = HttpTimeOut)
+  def stopContainer(containerId: String): Future[ContainerInfo] = {
+    con.post(path = s"/containers/$containerId/stop?t=3")
       .flatMap(_ => containerInfo(containerId))
-
+  }
 
   def startContainer(containerId: String): Future[ContainerInfo] = {
-    Ajax.post(s"$url/containers/$containerId/start", timeout = HttpTimeOut).flatMap(_ => containerInfo(containerId))
+    con.post(path = s"/containers/$containerId/start").flatMap(_ => containerInfo(containerId))
   }.recover {
     case ex: AjaxException =>
       throw new Exception(ex.xhr.responseText)
   }
 
-  def removeContainer(containerId: String): Future[Unit] =
-    Ajax.delete(s"$url/containers/$containerId", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.removeContainer] return: " + xhr.readyState)
+  def removeContainer(containerId: String): Future[Unit] = {
+    con.delete(path = s"/containers/$containerId").map { xhr =>
+      log.info("[dockerClient.removeContainer] return: " + xhr.statusCode)
     }.recover {
       case ex: AjaxException =>
         log.info(s"Unable to delete $containerId} ${ex.xhr.responseText}")
     }
+  }
 
   private def removeImage(imageId: String): Future[Unit] = {
-    Ajax.delete(s"$url/images/$imageId", timeout = HttpTimeOut).map { xhr =>
-      log.info("[dockerClient.removeImage] return: " + xhr.readyState)
+    con.delete(path = s"/images/$imageId").map { xhr =>
+      log.info("[dockerClient.removeImage] return: " + xhr.statusCode)
     }.transform(identity, ex => ex match {
       case ex: AjaxException =>
         log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
@@ -122,7 +148,7 @@ case class DockerClient(connection: Connection) {
       log.info("Staring garbageCollectionImages")
 
 
-      sendEvent(EventCategory.Image, EventAction.GC)
+      PlatformService.current.sendEvent(EventCategory.Image, EventAction.GC)
 
       status(s"Fetching active containers")
       val usedImagesId: Future[Seq[String]] = for {
@@ -193,6 +219,7 @@ case class DockerClient(connection: Connection) {
   }
 
   case class ImageWithParents(image: Image, parents: List[String])
+
   def getImageParents(all: Seq[Image], image: Image): List[String] = {
     all.find(_.Id == image.ParentId) match {
       case None => image.Id :: Nil
@@ -207,7 +234,7 @@ case class DockerClient(connection: Connection) {
 
 
   def garbageCollectionContainers(): Future[Unit] = {
-    sendEvent(EventCategory.Container, EventAction.GC)
+    PlatformService.current.sendEvent(EventCategory.Container, EventAction.GC)
     containers(all = true, extraInfo = false).flatMap { all =>
       def delete(containers: List[Container]): Future[Unit] = containers match {
         case head :: tail => removeContainer(head.Id).andThen { case _ => delete(tail) }
@@ -218,53 +245,56 @@ case class DockerClient(connection: Connection) {
   }
 
   def top(containerId: String): Future[ContainerTop] =
-    Ajax.get(s"$url/containers/$containerId/top", timeout = HttpTimeOut).map { xhr =>
+    con.get(path = s"/containers/$containerId/top").map { xhr =>
       log.info("[dockerClient.top] return: " + xhr.responseText)
       read[ContainerTop](xhr.responseText)
     }
 
   //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-images
-  def images(all: Boolean = false): Future[Seq[Image]] =
-    Ajax.get(s"$url/images/json?all=$all", timeout = HttpTimeOut).map { xhr =>
+  def images(all: Boolean = false): Future[Seq[Image]] = {
+    con.get(path = s"/images/json?all=$all").map { xhr =>
       log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
     }.map {
       _.sortBy(-_.Created)
         .filter(all || !_.RepoTags.contains("<none>:<none>"))
     }
-
+  }
 
   def imageInfo(imageId: String): Future[ImageInfo] =
-    Ajax.get(s"$url/images/$imageId/json", timeout = HttpTimeOut).map { xhr =>
+    con.get(path = s"/images/$imageId/json").map { xhr =>
       log.debug("[dockerClient.imageInfo] ")
       read[ImageInfo](xhr.responseText)
     }
 
   def imageHistory(imageId: String): Future[Seq[ImageHistory]] =
-    Ajax.get(s"$url/images/$imageId/history", timeout = HttpTimeOut).map { xhr =>
+    con.get(path = s"/images/$imageId/history").map { xhr =>
       log.debug("[dockerClient.imageHistory]")
       read[Seq[ImageHistory]](xhr.responseText)
     }
 
-  def imagesSearch(term: String): Future[Seq[ImageSearch]] =
-    Ajax.get(s"$url/images/search?term=${term.toLowerCase}", timeout = HttpExternalTimeOut).map { xhr =>
+  def imagesSearch(term: String): Future[Seq[ImageSearch]] = {
+    con.get(path = s"/images/search?term=${term.toLowerCase}").map { xhr =>
       log.info("[dockerClient.imagesSearch]")
       read[Seq[ImageSearch]](xhr.responseText)
     }
+  }
 
   // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#list-containers
   // Note: gather extraInfo is slower (ex: SizeRootFs, SizeRw).
-  private def containers(all: Boolean, extraInfo: Boolean): Future[Seq[Container]] =
-    Ajax.get(s"$url/containers/json?all=$all&size=$extraInfo", timeout = HttpTimeOut).map { xhr =>
+  private def containers(all: Boolean, extraInfo: Boolean): Future[Seq[Container]] = {
+    con.get(path = s"/containers/json?all=$all&size=$extraInfo").map { xhr =>
       log.info(s"[dockerClient.containers]")
       read[Seq[Container]](xhr.responseText)
     }
+  }
 
   //https://docs.docker.com/reference/api/docker_remote_api_v1.17/#display-system-wide-information
-  def info(): Future[Info] =
-    Ajax.get(s"$url/info").map { xhr =>
+  def info(): Future[Info] = {
+    con.get(path = s"/info").map { xhr =>
       read[Info](xhr.responseText)
     }
+  }
 
   def checkVersion(): Future[Boolean] = version().map(_.apiVersion).map {
     case (mayor, _) if (mayor > Mayor) => true
@@ -272,110 +302,41 @@ case class DockerClient(connection: Connection) {
     case _ => false
   }
 
-  private def version(): Future[Version] =
-    Ajax.get(s"${connection.url}/version", timeout = PingTimeOut).map { xhr =>
+  private def version(): Future[Version] = {
+    con.get(path = s"/version", timeout = PingTimeOut).map { xhr =>
       log.info("[dockerClient.version] return: " + xhr.responseText)
       val version = read[Version](xhr.responseText)
       VersionBroadcaster.publishVersion(version)
       version
     }
-
-  def attachToContainer(containerId: String): WebSocket = {
-    import util.StringUtils._
-    val schema = if (connection.url.startsWith("http://")) "ws://" else "wss://"
-    val ws = schema + substringAfter(s"$url/containers/$containerId/attach/ws?logs=1&stderr=1&stdout=1&stream=1&stdin=1", "://")
-    log.info(s"[dockerClient.attach] url: $ws")
-    new WebSocket(ws)
   }
 
-  def pullImage(term: String): EventStream = {
-    val Loading = 3
-    val Done = 4
-    val p = Promise[Seq[EventStatus]]
-    val xhr = new XMLHttpRequest()
+  def attachToContainer(containerId: String): Future[BasicWebSocket] = con.attachToContainer(containerId)
 
-    val currentStream = EventStream()
-    xhr.onreadystatechange = { event: Event =>
-      currentStream.data = xhr.responseText
-      if (xhr.readyState == Done) {
-        currentStream.done = true
-      }
-    }
+  def pullImage(term: String): EventStream = con.pullImage(term)
 
-    xhr.open("POST", s"$url/images/create?fromImage=$term", async = true)
-    log.info(s"[dockerClient.pullImage] start")
-    xhr.send()
-    currentStream
-  }
-
-  def createContainer(name: String, request: CreateContainerRequest): Future[CreateContainerResponse] =
-    Ajax.post(s"$url/containers/create?name=$name",
-      write(request),
-      headers = Map("Content-Type" -> "application/json"),
-      timeout = HttpTimeOut).map { xhr =>
+  def createContainer(name: String, request: CreateContainerRequest): Future[CreateContainerResponse] = {
+    con.post(path = s"/containers/create?name=$name&",
+      data = Some(write(request)),
+      headers = Map("Content-Type" -> "application/json")
+    ).map { xhr =>
       log.info("[dockerClient.version] return: " + xhr.responseText)
       read[CreateContainerResponse](xhr.responseText)
     }
-
-  def events(update: Seq[DockerEvent] => Unit): ConnectedStream = {
-    log.info("[dockerClient.events] start")
-    val since = {
-      val t = new js.Date()
-      t.setDate(t.getDate() - 3) // pull 3 days
-      t.getTime() / 1000
-    }.toLong
-
-    val Loading = 3
-    val Done = 4
-    val xhr = new XMLHttpRequest()
-
-    val currentStream = DockerEventStream()
-    xhr.onreadystatechange = { event: Event =>
-      EventsCustomParser.parse(currentStream, xhr.responseText)
-      if (xhr.readyState == Loading) {
-        update(currentStream.events)
-      } else if (xhr.readyState == Done) {
-        update(currentStream.events)
-      }
-    }
-
-    val eventsUrl = s"$url/events?since=$since"
-    xhr.open("GET", eventsUrl, async = true)
-    log.info(s"[dockerClient.events] start:  $eventsUrl")
-    xhr.send()
-
-    new ConnectedStream {
-      override def abort(): Unit = xhr.abort()
-    }
   }
 
+  def events(update: Seq[DockerEvent] => Unit): ConnectedStream = con.events(update)
+
   def containerChanges(containerId: String): Future[Seq[FileSystemChange]] = {
-    Ajax.get(s"$url/containers/$containerId/changes", timeout = HttpTimeOut).map { xhr =>
+    con.get(path = s"/containers/$containerId/changes").map { xhr =>
       log.info("[dockerClient.containerChanges]")
       read[Seq[FileSystemChange]](xhr.responseText)
     }
   }
 
   // https://docs.docker.com/engine/reference/api/docker_remote_api_v1.19/#get-container-stats-based-on-resource-usage
-  def containerStats(containerId: String)(updateUI: (Option[ContainerStats], ConnectedStream) => Unit): Unit = {
-    val xhr = new XMLHttpRequest()
-    val stream = new ConnectedStream {
-      override def abort(): Unit = {
-        xhr.abort()
-      }
-    }
-    xhr.onreadystatechange = { _: Event =>
-      log.debug("container stats update")
-      val stats = StatsCustomParser.parse(xhr.responseText)
-      updateUI(stats, stream)
-    }
-
-    val statsUrl = s"$url/containers/$containerId/stats"
-    xhr.open("GET", statsUrl, async = true)
-    log.info(s"[dockerClient.containerStats] $statsUrl")
-    xhr.send()
-  }
-
+  def containerStats(containerId: String)(updateUI: (Option[ContainerStats], ConnectedStream) => Unit): Unit =
+  con.containerStats(containerId)(updateUI)
 }
 
 trait ConnectedStream {
