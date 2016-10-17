@@ -229,8 +229,10 @@ case class DockerClient(connection: Connection) {
       log.info("[dockerClient.images] ")
       read[Seq[Image]](xhr.responseText)
     }.map {
-      _.sortBy(-_.Created)
-        .filter(all || !_.RepoTags.contains("<none>:<none>"))
+      _.map(img => Option(img.RepoTags) match {
+        case Some(_) => img
+        case None => img.copy(RepoTags = Seq.empty)
+      }).filter(all || !_.RepoTags.contains("<none>:<none>")).sortBy(-_.Created)
     }
 
 
