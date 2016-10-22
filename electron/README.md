@@ -15,7 +15,6 @@
 cd electron
 npm install
 bower install
-npm install electron-packager -g
 ```
 
 ### Compile Scala.js
@@ -34,5 +33,6 @@ npm start
 
 ### Package the native app
 ```
-electron-packager .
+npm install electron-packager
+npm run-script package
 ```
