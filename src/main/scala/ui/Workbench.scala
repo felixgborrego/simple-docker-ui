@@ -8,7 +8,7 @@ import model._
 import ui.Workbench.{Backend, State}
 import ui.pages.{EmptyPage, HomePage, Page, SettingsPage}
 import ui.widgets.Header
-import util.googleAnalytics._
+import util.{EventAction, EventCategory, PlatformService}
 import util.logger.log
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,7 +23,7 @@ object Workbench {
   case class Backend(t: BackendScope[Props, State]) {
 
     def show(page: Page) = t.modState { s =>
-      sendAppView(page.id)
+      PlatformService.current.sendAppView(page.id)
       s.copy(selectedPage = Some(page))
     }
 
@@ -36,21 +36,23 @@ object Workbench {
       t.modState(_.copy(connection = connection, savedConnections = savedUrls.map(Connection)))
       connection match {
         case Some(url) =>
-          sendEvent(EventCategory.Connection, EventAction.Connected, "SavedConnection")
+          PlatformService.current.sendEvent(EventCategory.Connection, EventAction.Connected, "SavedConnection")
           show(HomePage)
         case None => tryDefaultConnection()
       }
     }
 
     def tryDefaultConnection() = {
-      sendEvent(EventCategory.Connection, EventAction.Try, "Default")
+      PlatformService.current.sendEvent(EventCategory.Connection, EventAction.Try, "Default")
       val test = for {
-        client <- ConfigStorage.defaultUrl.map(Connection).map(DockerClient)
-        _ <- client.ping().map(_ => sendEvent(EventCategory.Connection, EventAction.Connected, "WithDefaultConnection"))
-        _ <- ConfigStorage.saveConnection(client.connection.url)
+        client <- ConfigStorage.defaultUrl.map(Connection).map(PlatformService.current.buildDockerClient)
+        _ <- client.ping().map(_ => PlatformService.current.sendEvent(EventCategory.Connection, EventAction.Connected, "WithDefaultConnection"))
+        _ <- ConfigStorage.saveConnection(client.con.connection.url)
       } yield connectSavedConnection()
 
-      test.onFailure { case _ => show(SettingsPage) }
+      test.onFailure { case ex =>
+        log.debug(s"Unable to connect $ex")
+        show(SettingsPage) }
     }
 
     def reconnect(): Future[Unit] = for {
@@ -96,7 +98,7 @@ case class WorkbenchRef(state: State, backend: Backend) {
   def show(page: Page) = backend.show(page)
 
   def client: Option[DockerClient] = {
-    state.connection.map(DockerClient)
+    state.connection.map(PlatformService.current.buildDockerClient)
   }
 
   def connection: Option[Connection] = state.connection

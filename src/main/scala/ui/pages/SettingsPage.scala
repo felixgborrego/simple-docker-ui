@@ -8,7 +8,7 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import ui.WorkbenchRef
 import ui.pages.SettingsPageModel._
 import ui.widgets.{Alert, Button}
-import util.googleAnalytics._
+import util.{EventAction, EventCategory, PlatformService}
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,7 +23,7 @@ object SettingsPage extends Page {
 
   case class Backend(t: BackendScope[Props, State]) {
     def onChange(connection: Connection)(e: ReactEventI) = {
-      val newValue = connection.copy(url = e.target.value)
+      val newValue = connection.copy(urlText = e.target.value)
       t.modState(s => s.copy(info = s.info.replace(connection, newValue)))
     }
 
@@ -56,6 +56,7 @@ object SettingsPage extends Page {
 
     def check(reconnect: Boolean): Future[Unit] = {
       val info = t.state.info
+      log.debug(s"Checking connection: $info")
       Future.sequence(info.connections.map(verifyConnection)).map { _ =>
         t.modState { state =>
           state.info.selected match {
@@ -63,15 +64,15 @@ object SettingsPage extends Page {
               log.info("No url selected")
               state
             case Some(selected) if selected.isValid =>
-              sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
+              PlatformService.current.sendEvent(EventCategory.Connection, EventAction.Saved, "Settings")
               if (reconnect) for {
                 _ <- ConfigStorage.saveUrls(info.connections.map(_.url))
                 _ <- ConfigStorage.saveConnection(selected.url)
               } yield t.props.ref.reconnect()
               state.copy(error = None)
             case Some(connection) =>
-              sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
-              log.info("Invalid urls")
+              PlatformService.current.sendEvent(EventCategory.Connection, EventAction.Unable, "Settings")
+              log.info(s"Invalid urls ${connection.url} - ${connection.state}")
               state.copy(error = Some(s"Unable to connected to the selected url '${connection.url}'"))
           }
         }
@@ -243,13 +244,16 @@ object SettingsPageModel {
   object ConnectionUnableToConnect extends ConnectionState
   object ConnectionInvalidApi extends ConnectionState
 
-  case class Connection(url: String, state: ConnectionState, id: UUID = UUID.randomUUID) {
+  case class Connection(urlText: String, state: ConnectionState, id: UUID = UUID.randomUUID) {
     def isValid = state == ConnectionValid
+    val url = urlText.toLowerCase
 
-    def checkConnection(): Future[Connection] = if (!url.startsWith("http")) {
+    def checkConnection(): Future[Connection] = if (!url.startsWith("http") && !url.startsWith("unix")) {
+      log.debug(s"Invalid url, unable to connect to $url")
       Future.successful(Connection(url, ConnectionUnableToConnect))
     } else {
-      DockerClient(model.Connection(url)).checkVersion().map {
+      log.debug(s"Looks like a valid url")
+      PlatformService.current.buildDockerClient(model.Connection(url)).checkVersion().map {
         case true => Connection(url, ConnectionValid)
         case false => Connection(url, ConnectionInvalidApi)
       }.recover {

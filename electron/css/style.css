@@ -1,0 +1,156 @@
+i.glyphicon3x {
+    font-size: 2em;
+}
+
+.navbar-default {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 30px;
+ }
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 30px;
+  background-color: #F0F0F0;
+  border-top: 2px solid #e7e7e7;
+ }
+
+.main-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+}
+
+.scrollable {
+   width: 100%;
+  height: -webkit-calc(100% - 80px);
+  overflow: auto;
+  margin-top: 50px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.navbar-brand {
+  padding-top: 5px;
+}
+
+.navbar-collapse{
+  background-color: #FFFFFF;
+}
+
+.glyphicon-spin {
+    -webkit-animation: spin 1000ms infinite linear;
+    animation: spin 1000ms infinite linear;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+div {
+  -webkit-user-select: auto;
+}
+
+
+
+.terminal {
+    float: left;
+    border: #000 solid 5px;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 11px;
+    color: #f0f0f0;
+    background: #000;
+}
+
+.reverse-video {
+    color: #000;
+    background: #f0f0f0;
+}
+
+.terminal-col-fixed{
+    width:1030px;
+    //background:red;
+    //position:fixed;
+    height:100%;
+}
+
+.modal-backdrop {
+    z-index:100; /* default makes modal be hidden behind the modal-backdrop div.*/
+}
+
+.noborder {
+    border: 0px;
+}
+
+code {
+  font-size: smaller;
+  color: black;
+  background-color: whitesmoke;
+}
+
+/* Custom bootstrap */
+.panel-heading {
+  padding: 2px 4px 0px 10px;
+}
+
+.panel-footer {
+  padding: 4px 4px 4px 4px;
+}
+
+.list-group-item {
+  padding: 4px 4px 4px 0px;
+  margin-left: 8px;
+}
+
+
+.fixed-table{
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+.panel-config {
+  background-color: whitesmoke;
+}
+
+.docker-cli{
+  text-align: left;
+  word-break: break-all;
+}
+
+.break-text {
+    word-break: break-all;
+}
+
+.break-by-word {
+    word-break: break-word;
+ }
+
+.navbar-right-margin {
+    margin-right: 2px;
+}
+
+.add-button-settings {
+    margin-top: 2px;
+    width: 39px;
+}

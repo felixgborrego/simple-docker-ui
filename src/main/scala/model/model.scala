@@ -18,7 +18,7 @@ case class Connection(url: String) {
   def ip = substringBefore(substringAfter(url, "://"), ":")
 }
 
-case class DockerMetadata(connection: Connection,
+case class DockerMetadata(connectionInfo: String,
                           info: Info,
                           version: Version,
                           containers: Seq[Container]) {

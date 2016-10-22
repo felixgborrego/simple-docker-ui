@@ -6,7 +6,7 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
 import ui.WorkbenchRef
 import ui.widgets.{Alert, ContainersCard, InfoCard, TableCard}
-import util.chrome.api._
+import util.PlatformService
 import util.logger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -47,7 +47,7 @@ case object HomePage extends Page {
             s.copy(info = Some(info.copy(containers = containers)))
           }
         }
-      
+
       def loadEvents() = {
         val stream = client.events { events => //streaming
           t.modState(s => s.copy(events = events))
@@ -90,19 +90,26 @@ object HomePageRender {
 
   def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef, B: Backend) = {
     val info = Map(
-      "Connected to" -> docker.connection.url,
+      "Connected to" -> docker.connectionInfo,
       "Version" -> s"${docker.version.Version} (api: ${docker.version.ApiVersion})",
-      "Docker UI" -> chrome.runtime.getManifest().version
+      "Docker UI" -> PlatformService.current.appVersion
     )
     <.div(
       ContainersCard(docker, ref)(() => B.refresh()),
-      InfoCard(info, InfoCard.SMALL, Some("System")),
+      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter),
       !docker.info.swarmMasterInfo.isEmpty ?= InfoCard(docker.info.swarmMasterInfo, InfoCard.SMALL, Some("Swarm Info")),
       !docker.info.swarmNodesDescription.isEmpty ?= docker.info.swarmNodesDescription.map { nodeInfo =>
         InfoCard(nodeInfo, InfoCard.SMALL, nodeInfo.keys.headOption)
       }
     )
   }
+
+  val infoFooter = Some(<.div(^.className := "panel-footer alert-warning",
+    """ Google has deprecated Chrome Apps.
+      | This app will no longer be available on the Web Store to users on Windows, Mac or Linux.
+      |  For new updates, you can migrate to """.stripMargin,
+    <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Install-Simple-Docker-UI-for-Desktop", ^.target := "blank", " the Desktop version of this app!"
+    )))
 
 
   def vdomEvents(events: Seq[DockerEvent]) = {

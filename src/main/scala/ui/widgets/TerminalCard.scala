@@ -2,10 +2,16 @@ package ui.widgets
 
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
+import model.BasicWebSocket
 import org.scalajs.dom
-import org.scalajs.dom.raw._
 import util.logger._
 import util.termJs._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.scalajs.js
+import scala.language.reflectiveCalls
+
 
 object TerminalCard {
 
@@ -15,18 +21,18 @@ object TerminalCard {
   val RESET = "\u001B[0m"
   val WS_CLOSE_ABNORMAL = 1006
 
-  def apply(info: TerminalInfo)(connectionFactory: () => WebSocket) = {
+  def apply(info: TerminalInfo)(connectionFactory: () => Future[BasicWebSocket]) = {
     val props = Props(info, connectionFactory)
     TerminalCardRender.component(props)
   }
 
   case class State(title: String = "Terminal",
-                   currentWS: Option[WebSocket] = None,
+                   currentWS: Option[BasicWebSocket] = None,
                    currentTerminal: Option[Terminal] = None)
 
   case class TerminalInfo(stdinOpened: Boolean, stdinAttached: Boolean, stOutAttached: Boolean)
 
-  case class Props(info: TerminalInfo, connectionFactory: () => WebSocket)
+  case class Props(info: TerminalInfo, connectionFactory: () => Future[BasicWebSocket])
 
   case class Backend(t: BackendScope[Props, State]) {
 
@@ -35,46 +41,12 @@ object TerminalCard {
       val terminal = new Terminal(config)
       val element = dom.document.getElementById("terminal")
       initTerminal(terminal, element)
-      val ws = t.props.connectionFactory()
-      t.modState(_.copy(currentWS = Some(ws), currentTerminal = Some(terminal)))
+      val wsFut = t.props.connectionFactory()
 
-      ws.onmessage = (x: MessageEvent) => {
-        terminal.write(x.data.toString.replace("\n", "\r\n"))
-      }
-
-      ws.onopen = (x: Event) => {
-        log.info(s"Connected")
-        val info = t.props.info
-        if (info.stdinOpened) {
-          terminal.write(s"${GREEN}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STDIN attached: ${info.stdinAttached}, STOUT attached:${info.stOutAttached}] $RESET\r\n")
-        } else {
-          terminal.write(s"${RED}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STOUT attached:${info.stOutAttached}] ]$RESET\r\n")
-          scalajs.js.timers.setTimeout(200) {
-            //remove focuse from the terminal
-            terminal.blur()
-          }
-        }
-      }
-      ws.onclose = (x: CloseEvent) => {
-        log.info("onclose" + x.toString)
-        if (x.code == WS_CLOSE_ABNORMAL) {
-          log.info("try to reconnect")
-          terminal.destroy()
-          didMount() // reconnect
-        } else {
-        terminal.write("\r\n\u001B[31m[Disconnected] " + x.reason + "\u001B[0m")
-        }
-      }
-      ws.onerror = (x: ErrorEvent) => {
-        log.info("some error has occurred " + x.message)
-        terminal.write("\u001B[31m[Connection error: " + x.message + "]\u001B[0m")
+      wsFut.onSuccess { case ws =>
+        connectToWS(terminal, ws)
       }
 
-      terminal.on("data", (data: String) => {
-        if (t.props.info.stdinOpened) {
-          ws.send(data)
-        }
-      })
 
       terminal.on("title", (data: String) => t.modState(s => s.copy(title = data)))
 
@@ -87,12 +59,56 @@ object TerminalCard {
       }
     }
 
+    def connectToWS(terminal: Terminal, ws: BasicWebSocket): Unit = {
+      t.modState(_.copy(currentWS = Some(ws), currentTerminal = Some(terminal)))
+
+      ws.onmessage = (event: {def data: js.Any}) => {
+        terminal.write(event.data.toString.replace("\n", "\r\n"))
+      }
+
+      ws.onopen = (_: Unit) => {
+        log.info(s"Connected")
+        val info = t.props.info
+        if (info.stdinOpened) {
+          terminal.write(s"${GREEN}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STDIN attached: ${info.stdinAttached}, STOUT attached:${info.stOutAttached}] $RESET\r\n")
+        } else {
+          terminal.write(s"${RED}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STOUT attached:${info.stOutAttached}] ]$RESET\r\n")
+          scalajs.js.timers.setTimeout(200) {
+            //remove focuse from the terminal
+            terminal.blur()
+          }
+        }
+      }
+      ws.onclose = (event: {def code: Int}) => {
+        log.info(s"onclose code: ${event.code}")
+        if (event.code == WS_CLOSE_ABNORMAL) {
+          log.info("try to reconnect")
+          terminal.destroy()
+          didMount() // reconnect
+        } else {
+          terminal.write("\r\n\u001B[31m[Disconnected] \u001B[0m")
+        }
+      }
+      ws.onerror = (event: {def message: String}) => {
+        log.info("some error has occurred " + event.message)
+        terminal.write("\u001B[31m[Connection error: " + event.message + "]\u001B[0m")
+      }
+
+      terminal.on("data", (data: String) => {
+        if (t.props.info.stdinOpened) {
+          ws.send(data)
+        }
+      })
+
+      ()
+    }
+
     def willUnmount() = {
       log.info("Terminal willUnmount")
       t.state.currentWS.foreach{ ws =>
-        ws.onclose = (x: CloseEvent) => {}
-        ws.onerror = (x: ErrorEvent) => {}
-        ws.onmessage = (x: MessageEvent) => {}
+        ws.onclose = { x: {def code: Int} => () }
+        ws.onerror = (x: {def message: String}) => {}
+        ws.onmessage = (x: {def data: js.Any}) => {}
         ws.close(1000, "Disconnect ws")
       }
       t.state.currentTerminal.foreach(_.destroy())

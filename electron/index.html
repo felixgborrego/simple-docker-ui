@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+
+  <title>Simple Docker UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+  <!-- Electron Hack to use any arbitrary js.
+   Insert this line above script imports  -->
+  <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+
+  <!-- Latest compiled and minified CSS   -->
+  <link rel="stylesheet" href="./bower_components/bootstrap/dist/css/bootstrap.min.css">
+
+
+  <!-- Optional theme    -->
+  <link rel="stylesheet" href="./bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
+
+
+  <script type="text/javascript"
+          src="./bower_components/react/react-with-addons.min.js"></script>
+
+
+  <script type="text/javascript"
+          src="./bower_components/jquery/dist/jquery.min.js"></script>
+  <script type="text/javascript"
+          src="./bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+  <!-- Bootcards CSS for desktop:   -->
+  <link rel="stylesheet" href="./bower_components/bootcards/dist/css/bootcards-desktop.min.css">
+
+  <style>
+        body {padding-top: 0px !important}
+    </style>
+  <!--  Bootcards JS-->
+  <script src="./bower_components/bootcards/dist/js/bootcards.min.js"></script>
+
+  <script type="text/javascript"
+          src="./bower_components/momentjs/min/moment.min.js"></script>
+
+
+  <script type="text/javascript" src="./dockerui-scalajs.js"></script>
+  <!--dev <script type="text/javascript" src="./scalajs-fastopt.js"></script>
+     pro: <script type="text/javascript" src="./scalajs-opt.js"></script>
+ -->
+
+  <link rel="stylesheet" href="css/style.css">
+
+
+  <script src="./bower_components/chrome-platform-analytics/google-analytics-bundle.js"></script>
+
+  <script type="text/javascript"
+          src="./bower_components/term.js/src/term.js"></script>
+
+  <link rel="stylesheet" href="./bower_components/font-awesome/css/font-awesome.min.css">
+
+</head>
+<body>
+<div class="main-container">
+  <div id="container" class="scrollable">
+    <!-- React.js component here! -->
+  </div>
+</div>
+
+<footer class="footer" style="text-align:center;">
+  <div class="container">
+    Simple Docker UI. (built using scala.js & React.js)
+    <i class="fa fa-twitter"></i> <a href="https://twitter.com/felixgborrego">@felixgborrego</a>
+    <i class="fa fa-github"></i>  <a href="https://github.com/felixgborrego/docker-ui-chrome-app" target="_blank">https://github.com/felixgborrego/docker-ui-chrome-app</a>
+  </div>
+</footer>
+
+<!-- Run App-->
+<script type="text/javascript" src="./scalajs-launcher.js">
+</script>
+
+
+
+
+<!-- Electron Hack to use any arbitrary js.
+Insert this line after script imports -->
+<script>if (window.module) module = window.module;</script>
+</body>
+</html>

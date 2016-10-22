@@ -6,11 +6,10 @@ import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model._
 import org.scalajs.dom
 import ui.WorkbenchRef
-import util.FutureUtils
+import util.{EventAction, EventCategory, FutureUtils, PlatformService}
 import util.PullEventsCustomParser.EventStatus
-import util.googleAnalytics._
 
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{Future, Promise}
 
 object PullModalDialog {
 
@@ -50,7 +49,7 @@ object PullModalDialog {
       val p = Promise[Unit]()
 
       t.props.ref.client.map { client =>
-        sendEvent(EventCategory.Image, EventAction.Pull, "StartPull")
+        PlatformService.current.sendEvent(EventCategory.Image, EventAction.Pull, "StartPull")
         val stream = client.pullImage(t.props.image.name + ":latest")
         t.modState(s => s.copy(progress = s.progress.copy(running = true)))
         def refresh(): Unit = FutureUtils.delay(RefreshMilliseconds){ () =>
@@ -60,7 +59,7 @@ object PullModalDialog {
           else {
             t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
             t.props.actionsBackend.imagePulled()
-            sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
+            PlatformService.current.sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
             p.success({})
           }
         }

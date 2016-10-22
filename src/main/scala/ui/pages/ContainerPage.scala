@@ -4,14 +4,13 @@ import api.{ConfigStorage, ConnectedStream}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model.stats.ContainerStats
-import model.{ContainerInfo, ContainerTop, FileSystemChange}
+import model.{BasicWebSocket, ContainerInfo, ContainerTop, FileSystemChange}
 import org.scalajs.dom.raw.WebSocket
 import ui.WorkbenchRef
 import ui.widgets.TerminalCard.TerminalInfo
 import ui.widgets._
-import util.googleAnalytics._
 import util.logger._
-import util.{CopyPasteUtil, StringUtils}
+import util._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -57,13 +56,13 @@ object ContainerPage {
 
     def stop() =
       t.props.ref.client.get.stopContainer(t.props.containerId).map { info =>
-        sendEvent(EventCategory.Container, EventAction.Stop)
+        PlatformService.current.sendEvent(EventCategory.Container, EventAction.Stop)
         refresh()
       }
 
     def start() =
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
-        sendEvent(EventCategory.Container, EventAction.Start)
+        PlatformService.current.sendEvent(EventCategory.Container, EventAction.Start)
         t.modState(s => s.copy(tabSelected = TabNone))
         refresh()
       }.recover {
@@ -86,7 +85,7 @@ object ContainerPage {
       t.modState(s => s.copy(tabSelected = tab))
     }
 
-    def attach(): WebSocket =
+    def attach(): Future[BasicWebSocket] =
       t.props.ref.client.get.attachToContainer(t.props.containerId)
 
     def showImage(): Unit = t.props.ref.client.map { client =>
