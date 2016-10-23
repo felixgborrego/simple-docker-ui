@@ -2,7 +2,7 @@
   "name": "Simple Docker UI",
   "short_name": "Docker UI",
   "description": "Simple Docker UI is an unofficial developer tool for monitoring and managing Docker containers.",
-  "version": "0.4.10",
+  "version": "0.5.0",
   "manifest_version": 2,
   "minimum_chrome_version": "33.0.1715.0",
   "icons": {

@@ -332,7 +332,7 @@ case class DockerClient(con: DockerConnection) {
   def containerChanges(containerId: String): Future[Seq[FileSystemChange]] = {
     con.get(path = s"/containers/$containerId/changes").map { xhr =>
       log.info("[dockerClient.containerChanges]")
-      read[Seq[FileSystemChange]](xhr.responseText)
+      Option(read[Seq[FileSystemChange]](xhr.responseText)).getOrElse(Seq.empty)
     }
   }
 
