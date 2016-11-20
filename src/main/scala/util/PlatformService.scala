@@ -27,6 +27,8 @@ trait PlatformService {
 
   def defaultUrl: Future[String]
 
+  def checkIsLatestVersion(callback: (String => Unit)): Unit
+
 }
 
 object PlatformService {

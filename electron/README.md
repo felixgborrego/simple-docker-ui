@@ -33,6 +33,8 @@ npm start
 
 ### Package the native app
 ```
-npm install electron-packager
+npm install electron-installer-dmg
+nom install electron-installer
 npm run-script package
+npm run-script dmg
 ```

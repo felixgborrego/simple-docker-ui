@@ -82,7 +82,7 @@ object SettingsPage extends Page {
     def verifyConnection(connection: Connection): Future[Unit] =
       connection.checkConnection().map { c =>
         t.modState { s =>
-          s.copy(info = s.info.replace(connection, c))
+          s.copy(info = s.info.replace(connection, c), error = c.error)
         }
       }
 
@@ -244,7 +244,7 @@ object SettingsPageModel {
   object ConnectionUnableToConnect extends ConnectionState
   object ConnectionInvalidApi extends ConnectionState
 
-  case class Connection(urlText: String, state: ConnectionState, id: UUID = UUID.randomUUID) {
+  case class Connection(urlText: String, state: ConnectionState, error: Option[String] = None, id: UUID = UUID.randomUUID) {
     def isValid = state == ConnectionValid
     val url = urlText.toLowerCase
 
@@ -258,14 +258,14 @@ object SettingsPageModel {
         case false => Connection(url, ConnectionInvalidApi)
       }.recover {
         case ex: Exception =>
-          log.info(s"Unable to connected to $url")
-          Connection(url, ConnectionUnableToConnect)
+          log.info(s"Unable to connected to $url - ${ex.getMessage}")
+          Connection(url, ConnectionUnableToConnect, Some(ex.getMessage))
       }
     }
 
     def stateMessage = state match {
       case ConnectionVerifying | ConnectionNoVerified => ""
-      case ConnectionUnableToConnect => "Unable to connect"
+      case ConnectionUnableToConnect => s"Unable to connect"
       case ConnectionInvalidApi => s"Invalid API version, minimum API supported is ${DockerClientConfig.DockerVersion}"
       case ConnectionValid => "Valid connection"
     }

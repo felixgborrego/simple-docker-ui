@@ -85,6 +85,8 @@ object ChromePlatformService extends PlatformService {
     case "linux" | "openbsd" => ConfigStorage.DefaultLinuxUrl
     case _ => ""
   }
+
+  override def checkIsLatestVersion(callback: (String) => Unit): Unit = {} // Auto Chrome update
 }
 
 

@@ -16,7 +16,11 @@ case object HomePage extends Page {
 
   val id = "HomePage"
 
-  case class State(info: Option[DockerMetadata] = None, events: Seq[DockerEvent] = Seq.empty, error: Option[String] = None, stream: Option[ConnectedStream] = None)
+  case class State(info: Option[DockerMetadata] = None,
+                   events: Seq[DockerEvent] = Seq.empty,
+                   error: Option[String] = None,
+                   stream: Option[ConnectedStream] = None,
+                   message: Option[String] = None)
 
   case class Props(ref: WorkbenchRef) {
     def url = ref.connection.map(_.url).getOrElse("''")
@@ -60,6 +64,11 @@ case object HomePage extends Page {
 
     def willUnMount(): Unit = t.state.stream.map(_.abort())
 
+    def didMount(): Unit = {
+      PlatformService.current.checkIsLatestVersion { msg =>
+        t.modState(s => s.copy(message = Some(msg)))
+      }
+    }
     def refresh() = willMount()
   }
 
@@ -79,16 +88,17 @@ object HomePageRender {
     .backend(new Backend(_))
     .render((P, S, B) => vdom(S, P, B))
     .componentWillMount(_.backend.willMount)
+    .componentDidMount(_.backend.didMount)
     .componentWillUnmount(_.backend.willUnMount)
     .build
 
   def vdom(S: State, P: Props, B: Backend) = <.div(
     S.error.map(Alert(_, Some(P.ref.link(SettingsPage)))),
-    S.info.map(vdomInfo(_, P.ref, B)),
+    S.info.map(vdomInfo(_, P.ref, B, S)),
     vdomEvents(S.events)
   )
 
-  def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef, B: Backend) = {
+  def vdomInfo(docker: DockerMetadata, ref: WorkbenchRef, B: Backend, S: State) = {
     val info = Map(
       "Connected to" -> docker.connectionInfo,
       "Version" -> s"${docker.version.Version} (api: ${docker.version.ApiVersion})",
@@ -96,7 +106,7 @@ object HomePageRender {
     )
     <.div(
       ContainersCard(docker, ref)(() => B.refresh()),
-      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter),
+      InfoCard(info, InfoCard.SMALL, Some("System"), footer = infoFooter(S.message)),
       !docker.info.swarmMasterInfo.isEmpty ?= InfoCard(docker.info.swarmMasterInfo, InfoCard.SMALL, Some("Swarm Info")),
       !docker.info.swarmNodesDescription.isEmpty ?= docker.info.swarmNodesDescription.map { nodeInfo =>
         InfoCard(nodeInfo, InfoCard.SMALL, nodeInfo.keys.headOption)
@@ -104,12 +114,11 @@ object HomePageRender {
     )
   }
 
-  val infoFooter = Some(<.div(^.className := "panel-footer alert-warning",
-    """ Google has deprecated Chrome Apps.
-      | This app will no longer be available on the Web Store to users on Windows, Mac or Linux.
-      |  For new updates, you can migrate to """.stripMargin,
-    <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Install-Simple-Docker-UI-for-Desktop", ^.target := "blank", " the Desktop version of this app!"
-    )))
+  def infoFooter(message: Option[String]) = message.map { msg =>
+    <.div(^.className := "panel-footer alert-warning",
+      msg
+    )
+  }
 
 
   def vdomEvents(events: Seq[DockerEvent]) = {

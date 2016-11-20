@@ -16,7 +16,13 @@ import scala.scalajs.js
 import scala.scalajs.js.{Dynamic, URIUtils}
 
 object ElectronPlatformService extends PlatformService {
-  override def appVersion: String = "Electron DockerUI beta"
+
+  override def appVersion: String = {
+    import js.Dynamic.{global => g}
+    val electron = g.require("electron")
+    electron.remote.app.getVersion().asInstanceOf[String]
+  }
+
   val keyStoragePrefix = "v1_"
 
   override def osName: Future[String] = Future.successful("Electron Platform")
@@ -36,15 +42,15 @@ object ElectronPlatformService extends PlatformService {
   }
 
   override def sendAppView(name: String): Unit = {
-    log.info(s"sendAppView: $name")
+    ElectronAnalytics.sendPageView(name)
   }
 
   override def sendEvent(category: String, action: String, label: String): Unit = {
-    log.info(s"sendEvent: $category, $action, $label")
+    ElectronAnalytics.sendEvent(category, action, label)
   }
 
   override def sendException(ex: String): Unit = {
-    log.info(s"sendException: $ex")
+    ElectronAnalytics.sendException(ex)
   }
 
   override def buildDockerClient(con: Connection): DockerClient = try {
@@ -62,10 +68,13 @@ object ElectronPlatformService extends PlatformService {
     log.debug(s"Default docker url $DefaultDockerURL")
     DefaultDockerURL
   }
+
+  override def checkIsLatestVersion(callback: (String) => Unit): Unit = CheckIsLatestVersion.check(callback)
 }
 
 class ElectronDockerConnection(val connection: Connection) extends DockerConnection {
   import DockerClientConfig._
+
   import js.JSConverters._
 
   val info = connection.url
@@ -82,14 +91,14 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     val callback: js.Function2[js.Any, js.Dynamic, Unit] =
       (msg: js.Any, response: js.Dynamic) => {
         if (msg == null) {
-          log.debug(s"Processing dail response...")
+          //log.debug(s"Processing dail response...")
           if (dialOptions.hijack) {
             processHijackResponse(onWebSocketCreated, response)
           } else if (dialOptions.isStream) {
             processStreamingResponse(onStreamingData, shouldAbort, response)
           } else {
             val responseText = js.Dynamic.global.JSON.stringify(response).asInstanceOf[String]
-            log.debug(s"dial response: ${responseText.take(1000)}...")
+            //log.debug(s"dial response: ${responseText.take(1000)}...")
             p.success(Response(responseText, 200))
           }
         } else {
@@ -203,7 +212,6 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
 
   // TODO refactor
   def events(update: Seq[DockerEvent] => Unit): ConnectedStream = {
-    log.info("[dockerClient.events] start")
     val since = {
       val t = new js.Date()
       t.setDate(t.getDate() - 3) // pull 3 days
@@ -225,7 +233,6 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
       update(currentStream.events)
     }
 
-    log.info(s"[dockerClient.events] start:  $eventsUrl")
     val options = new DialOptions(path = eventsUrl, method = "GET", options = js.undefined, Map(("200", true)).toJSDictionary, isStream = true)
     dial(options, onStreamingData, (Unit) => isAborted)
 

@@ -1,13 +1,14 @@
 {
   "name": "electron-dockerui",
-  "version": "1.0.0",
+  "version": "0.5.1",
   "description": "A minimal Electron application",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "debug": "cd .. && sbt \"project electron\" \"fastOptJS\" && cd electron && electron .",
     "test": "sbt test",
-    "package": "electron-packager . SimpleDockerUI --platform=darwin --arch=x64 --overwrite --icon=img/logo_small.icns --ignore='src' --ignore='target'"
+    "package": "electron-packager . SimpleDockerUI --platform=darwin --arch=x64 --overwrite --icon=img/logo_small.icns --ignore='src' --ignore='target' --asar",
+    "dmg": "electron-installer-dmg SimpleDockerUI-darwin-x64/SimpleDockerUI.app SimpleDockerUI --icon=img/logo_small.icns --overwrite"
   },
   "repository": {
     "type": "git",
@@ -27,9 +28,12 @@
   },
   "homepage": "https://github.com/felixgborrego/docker-ui-chrome-app",
   "devDependencies": {
-    "electron": "^1.4.0"
+    "electron": "^1.4.6",
+    "electron-installer-dmg": "^0.1.2"
   },
   "dependencies": {
-    "docker-modem" : "^0.3.1"
+    "docker-modem": "^0.3.1",
+    "split-ca": "^1.0.0",
+    "universal-analytics": "0.4.6"
   }
 }

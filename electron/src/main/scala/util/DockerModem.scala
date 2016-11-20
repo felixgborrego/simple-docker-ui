@@ -11,12 +11,21 @@ import scala.scalajs.js.annotation.ScalaJSDefined
 class ModemOptions(val socketPath: String,
                    val host: String,
                    val protocol: String,
-                   val port: String
+                   val port: String,
+                   val ca: js.UndefOr[InputData] = js.undefined,
+                   val cert: js.UndefOr[InputData] = js.undefined,
+                   val key: js.UndefOr[InputData] = js.undefined
                   ) extends js.Object
 
 
 @ScalaJSDefined
-class DialOptions(val path: String, val method: String, val options: js.UndefOr[InputData], val statusCodes: js.Dictionary[Boolean], val isStream: Boolean = false, val hijack: Boolean = false, val openStdin: Boolean = false) extends js.Object
+class DialOptions(val path: String,
+                  val method: String,
+                  val options: js.UndefOr[InputData],
+                  val statusCodes: js.Dictionary[Boolean],
+                  val isStream: Boolean = false,
+                  val hijack: Boolean = false,
+                  val openStdin: Boolean = false) extends js.Object
 
 @ScalaJSDefined
 class DockerMessage(val json: String, val reason: String, val statusCode: String) extends js.Object
@@ -46,7 +55,24 @@ object DockerModem {
         log.debug(s"Url: protocol: $protocol, host: $host")
         val port = connection.url.drop(protocol.size).drop("://".size).dropWhile(_ != ':').drop(1)
         log.debug(s"Url: port: $port")
-        new ModemOptions(socketPath = null, host = host, protocol = protocol, port = port)
+
+        val pathOpt = Option(g.process.env.DOCKER_CERT_PATH.asInstanceOf[String])
+        val (envCa, envCert, envKey) =
+          if (protocol == "https" && pathOpt.isDefined) {
+            val path = pathOpt.get
+
+            log.info(s"Using Cert Path  $path")
+            val fs = g.require("fs")
+            val splitCa = g.require("split-ca")
+            val ca: js.UndefOr[InputData] = splitCa.apply(s"$path/ca.pem").asInstanceOf[InputData]
+            val cert: js.UndefOr[InputData] = fs.readFileSync(s"$path/cert.pem").asInstanceOf[InputData]
+            val key: js.UndefOr[InputData] = fs.readFileSync(s"$path/key.pem").asInstanceOf[InputData]
+            (ca, cert, key)
+          } else {
+            (js.undefined, js.undefined, js.undefined)
+          }
+
+        new ModemOptions(socketPath = null, host = host, protocol = protocol, port = port, ca = envCa, cert = envCert, key = envKey)
       }
     }
     log.debug(s"modemOptions: protocol: ${modemOptions.protocol} path: ${modemOptions.socketPath}")
