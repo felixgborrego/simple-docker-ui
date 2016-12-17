@@ -20,12 +20,21 @@ object ElectronPlatformService extends PlatformService {
   override def appVersion: String = {
     import js.Dynamic.{global => g}
     val electron = g.require("electron")
-    electron.remote.app.getVersion().asInstanceOf[String]
+    val version = electron.remote.app.getVersion().asInstanceOf[String]
+    s"$version"
   }
 
-  val keyStoragePrefix = "v1_"
+  val keyStoragePrefix = "v2_"
 
-  override def osName: Future[String] = Future.successful("Electron Platform")
+  def os(): String = {
+    import js.Dynamic.{global => g}
+    val os = g.require("os")
+    // https://nodejs.org/api/os.html#os_os_release
+    // 'darwin', 'freebsd', 'linux', 'sunos' or 'win32'
+    os.platform().asInstanceOf[String]
+  }
+
+  override def osName: Future[String] = Future.successful(os())
 
   override def save(key: String, value: String): Future[Unit] = Future.successful {
     dom.window.localStorage.setItem(keyStoragePrefix + key, value)
@@ -33,7 +42,6 @@ object ElectronPlatformService extends PlatformService {
 
   override def get(key: String): Future[String] = Future {
     val value = Option(dom.window.localStorage.getItem(keyStoragePrefix + key))
-    log.debug(s"Get $key=$value")
     value.getOrElse(throw new Exception(s"Key $key not found"))
   }
 
@@ -62,11 +70,22 @@ object ElectronPlatformService extends PlatformService {
       throw ex
   }
 
-  val DefaultDockerURL = "unix:///var/run/docker.sock"
+  val DefaultMacLinuxDockerURL = "unix:///var/run/docker.sock"
+  val DefaultWindows = "http://localhost:2375"
 
-  def defaultUrl: Future[String] = Future.successful {
-    log.debug(s"Default docker url $DefaultDockerURL")
-    DefaultDockerURL
+  def defaultUrl: Future[String] =  {
+    osName.map {
+      case "win32" =>
+        log.debug(s"Default docker for Windows url $DefaultWindows")
+        DefaultWindows
+      case "darwin" =>
+        log.debug(s"Default docker for Mac url $DefaultMacLinuxDockerURL")
+        DefaultMacLinuxDockerURL
+      case other =>
+        log.debug(s"Default docker for '$other' url $DefaultMacLinuxDockerURL")
+        DefaultMacLinuxDockerURL
+    }
+
   }
 
   override def checkIsLatestVersion(callback: (String) => Unit): Unit = CheckIsLatestVersion.check(callback)
@@ -91,19 +110,18 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     val callback: js.Function2[js.Any, js.Dynamic, Unit] =
       (msg: js.Any, response: js.Dynamic) => {
         if (msg == null) {
-          //log.debug(s"Processing dail response...")
           if (dialOptions.hijack) {
             processHijackResponse(onWebSocketCreated, response)
           } else if (dialOptions.isStream) {
-            processStreamingResponse(onStreamingData, shouldAbort, response)
+            def onComplete { p.success(Response("", 200)) }
+            processStreamingResponse(onStreamingData, shouldAbort, onComplete, response)
           } else {
             val responseText = js.Dynamic.global.JSON.stringify(response).asInstanceOf[String]
-            //log.debug(s"dial response: ${responseText.take(1000)}...")
             p.success(Response(responseText, 200))
           }
         } else {
           log.debug(s"dial fail: $msg")
-          p.failure(new Exception(msg.toString))
+          p.failure(new ConnectionException(msg.toString))
         }
         ()
       }
@@ -113,7 +131,7 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     } catch {
       case ex: Throwable =>
         log.debug(s"dial error: $ex")
-        p.failure(ex)
+        p.failure(ConnectionException(ex.getMessage))
     }
     p.future
   }
@@ -125,17 +143,19 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     onWebSocketCreated(ws)
   }
 
-  def processStreamingResponse(onStreamingData: (String) => Unit, shouldAbort: Unit => Boolean, response: Dynamic): Unit = {
+  def processStreamingResponse(onStreamingData: (String) => Unit, shouldAbort: Unit => Boolean, onComplete: => Unit,response: Dynamic): Unit = {
     log.debug(s"processing stream $response")
     val eventEmiter = response.asInstanceOf[EventEmitter]
     eventEmiter.on("data") { chuck: Dynamic =>
       val data = chuck.toString
-      log.debug(s"dial stream data: ${data.take(1000)}...")
       onStreamingData(data)
       if (shouldAbort()) {
         log.info("Stream aborted")
         response.req.abort()
       }
+    }
+    eventEmiter.on("end") { _: Dynamic =>
+      onComplete
     }
   }
 
@@ -179,8 +199,7 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     )
     dial(options, onWebSocketCreated = onWebSocketCreated)
       .onFailure { case ex: Exception =>
-        log.debug(s"Unable to connect WS")
-        log.debug(s"${ex.toString}")
+        log.debug(s"Unable to connect WS - ${ex.toString}")
         p.failure(ex)
       }
 
@@ -194,7 +213,6 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     val currentStream = EventStream()
 
     def onStreamingData(data: String): Unit = {
-      log.debug(s"[dockerClient.pullImage] data: $data")
       currentStream.data = data
     }
     val sanitizedTerm = URIUtils.encodeURIComponent(term)
@@ -203,8 +221,7 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     log.info(s"[dockerClient.pullImage] start")
 
     dial(options, onStreamingData).onComplete { result =>
-      log.debug(s"Pull finished $result")
-      currentStream.done
+      currentStream.done = true
     }
 
     currentStream
@@ -249,7 +266,6 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
     }
 
     def onStreamingData(data: String): Unit = {
-      log.debug(s"container stats update ${data.take(100)}...")
       val stats = StatsCustomParser.parse(data)
       updateUI(stats, stream)
     }

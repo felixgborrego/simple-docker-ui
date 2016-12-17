@@ -3,7 +3,7 @@ package util.chrome
 import _root_.api._
 import model.stats.ContainerStats
 import model.{BasicWebSocket, Connection, DockerEvent}
-import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.ext.{Ajax, AjaxException}
 import org.scalajs.dom.ext.Ajax.InputData
 import org.scalajs.dom.raw._
 import util.EventsCustomParser.DockerEventStream
@@ -101,15 +101,26 @@ class ChromeDockerConnection(val connection: Connection) extends DockerConnectio
   val url = connection.url + "/" + DockerVersion
   val urlOptional = connection.url + "/" + DockerOptionalVersion
 
-  def get(path: String, timeout: Int = HttpTimeOut): Future[Response] = Ajax.get(url = s"$url$path", timeout = timeout)
-    .map(xhr => Response(xhr.responseText, xhr.status))
+  def get(path: String, timeout: Int = HttpTimeOut): Future[Response] = {
+    Ajax.get(url = s"$url$path", timeout = timeout)
+      .map(xhr => Response(xhr.responseText, xhr.status))
+  }.recover {
+    case ex: AjaxException => throw ConnectionException(ex.xhr.responseText)
+  }
 
-  def post(path: String, data: Option[InputData] = None, headers: Map[String, String] = Map.empty, timeout: Int = HttpTimeOut) =
+  def post(path: String, data: Option[InputData] = None, headers: Map[String, String] = Map.empty, timeout: Int = HttpTimeOut) = {
     Ajax.post(url = s"$url$path", data = data.getOrElse(""), headers = headers, timeout = timeout)
       .map(xhr => Response(xhr.responseText, xhr.status))
+  }.recover {
+    case ex: AjaxException => throw ConnectionException(ex.xhr.responseText)
+  }
 
-  def delete(path: String, timeout: Int = HttpTimeOut): Future[Response] = Ajax.delete(url = s"$url$path", timeout = timeout)
-    .map(xhr => Response(xhr.responseText, xhr.status))
+  def delete(path: String, timeout: Int = HttpTimeOut): Future[Response] = {
+    Ajax.delete(url = s"$url$path", timeout = timeout)
+      .map(xhr => Response(xhr.responseText, xhr.status))
+  }.recover {
+    case ex: AjaxException => throw ConnectionException(ex.xhr.responseText)
+  }
 
   // TODO refactor
   def attachToContainer(containerId: String): Future[BasicWebSocket] = Future {

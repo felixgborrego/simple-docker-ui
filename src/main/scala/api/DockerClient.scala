@@ -37,6 +37,8 @@ object DockerClientConfig {
   val KeepInGarbageCollection = 10
 }
 
+case class ConnectionException(message: String) extends Exception(message)
+
 trait DockerConnection {
   val connection: Connection
 
@@ -110,27 +112,25 @@ case class DockerClient(con: DockerConnection) {
 
   def startContainer(containerId: String): Future[ContainerInfo] = {
     con.post(path = s"/containers/$containerId/start").flatMap(_ => containerInfo(containerId))
-  }.recover {
-    case ex: AjaxException =>
-      throw new Exception(ex.xhr.responseText)
   }
 
   def removeContainer(containerId: String): Future[Unit] = {
     con.delete(path = s"/containers/$containerId").map { xhr =>
       log.info("[dockerClient.removeContainer] return: " + xhr.statusCode)
     }.recover {
-      case ex: AjaxException =>
-        log.info(s"Unable to delete $containerId} ${ex.xhr.responseText}")
+      case ex: ConnectionException =>
+        log.info(s"Unable to delete $containerId} ${ex.getMessage}")
     }
   }
 
   private def removeImage(imageId: String): Future[Unit] = {
-    con.delete(path = s"/images/$imageId").map { xhr =>
+    val id = imageId.replace("sha256:","")
+    con.delete(path = s"/images/$id").map { xhr =>
       log.info("[dockerClient.removeImage] return: " + xhr.statusCode)
     }.transform(identity, ex => ex match {
-      case ex: AjaxException =>
-        log.info(s"Unable to delete $imageId} ${ex.xhr.responseText}")
-        new Exception(ex.xhr.responseText)
+      case ex: ConnectionException =>
+        log.info(s"Unable to delete $imageId} ${ex.getMessage}")
+        ex
     })
   }
 
@@ -196,7 +196,7 @@ case class DockerClient(con: DockerConnection) {
         log.info(s"Ordering images before GC...")
         // First need to order from top to button
 
-        val imagesOrdered = unorderedImages.sortWith(compareImages).map(_.image)
+        val imagesOrdered = unorderedImages.sortWith(compareImages).map(_.image).distinct
 
         status(s"Images Ordered and ready to GC: ${unorderedImages.size}")
         log.info("images ordered:")
@@ -210,7 +210,7 @@ case class DockerClient(con: DockerConnection) {
         }
 
         }
-        FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay, ignoreErrors = false)
+        FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay, ignoreErrors = true)
       }.flatMap(identity)
 
       tasksFut.flatMap(_ => images())

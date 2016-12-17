@@ -23,7 +23,7 @@ case class DockerMetadata(connectionInfo: String,
                           version: Version,
                           containers: Seq[Container]) {
 
-  def totalContainersSize = bytesToSize(containers.map(c => c.SizeRootFs + c.SizeRw).sum)
+  def totalContainersSize = bytesToSize(containers.map(c => c.SizeRootFs.toLong + c.SizeRw.toLong).sum)
 }
 
 case class Info(Containers: Int,

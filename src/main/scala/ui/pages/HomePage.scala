@@ -46,7 +46,7 @@ case object HomePage extends Page {
         }
 
       def loadContainersSize(info: DockerMetadata) =
-        client.containersRunningWithExtraInfo.map { containers =>
+        client.containersRunningWithExtraInfo().map { containers =>
           t.modState { s =>
             s.copy(info = Some(info.copy(containers = containers)))
           }

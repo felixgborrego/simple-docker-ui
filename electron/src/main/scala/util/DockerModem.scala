@@ -55,8 +55,7 @@ object DockerModem {
         log.debug(s"Url: protocol: $protocol, host: $host")
         val port = connection.url.drop(protocol.size).drop("://".size).dropWhile(_ != ':').drop(1)
         log.debug(s"Url: port: $port")
-
-        val pathOpt = Option(g.process.env.DOCKER_CERT_PATH.asInstanceOf[String])
+        val pathOpt: js.UndefOr[String] = g.process.env.DOCKER_CERT_PATH.asInstanceOf[js.UndefOr[String]]
         val (envCa, envCert, envKey) =
           if (protocol == "https" && pathOpt.isDefined) {
             val path = pathOpt.get

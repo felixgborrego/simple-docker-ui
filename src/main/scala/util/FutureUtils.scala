@@ -24,7 +24,9 @@ object FutureUtils {
               case NonFatal(ex) if ignoreErrors =>
                 log.info(s"Unable to process, Future Skipped - ${ex.getMessage}")
                 exec(acc, tail)
-              case NonFatal(ex) => p.failure(ex)
+              case NonFatal(ex) =>
+                log.info(s"Unable to process, Stopping - ${ex.getMessage}")
+                p.failure(ex)
             }
           }
 

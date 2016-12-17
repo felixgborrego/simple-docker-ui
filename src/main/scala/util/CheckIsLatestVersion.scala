@@ -8,16 +8,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import logger.log
 
 object CheckIsLatestVersion {
-  def installedVersion(): String = PlatformService.current.appVersion
+  def installedVersion(): String = s"v${PlatformService.current.appVersion}"
 
-  case class Release(name: String)
+  case class Release(tag_name: String)
 
   val Url = "https://api.github.com/repos/felixgborrego/docker-ui-chrome-app/releases/latest"
 
   def latestVersion(): Future[String] = {
-    Ajax.get(Url, timeout = 500).map { xhr =>
-      read[Release](xhr.responseText)
-    }.map(_.name)
+    Ajax.get(Url, timeout = 5000).map { xhr =>
+      val version = read[Release](xhr.responseText)
+      version
+    }.map(_.tag_name)
   }
 
   var alreadyChecked = false
@@ -26,10 +27,14 @@ object CheckIsLatestVersion {
     alreadyChecked = true
     val installed = installedVersion()
     latestVersion().map {
-      case `installed` => log.info(s"Installed version $installed is the latest version")
-      case latest => callback(s"There is a new version available $latest")
+      case `installed` =>
+        log.info(s"Installed version $installed is the latest version")
+      case latest =>
+        log.info(s"Latest Version: $latest, installed: $installed")
+        callback(s"There is a new version available $latest")
     }.onFailure {
-      case ex: AjaxException => log.info(s"Unable to fetch latest version - ${ex.xhr.responseText}")
+      case ex: AjaxException =>
+        log.info(s"Unable to fetch latest version - ${ex} - ${ex.xhr.responseText}")
     }
   }
 

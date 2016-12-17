@@ -55,8 +55,9 @@ object PullModalDialog {
         def refresh(): Unit = FutureUtils.delay(RefreshMilliseconds){ () =>
           val (activeEvents, finishedEvents) = stream.refreshEvents()
           t.modState(s => s.copy(progress = s.progress.copy(events = activeEvents, running = true)))
-          if (!stream.done && t.isMounted()) refresh()
-          else {
+          if (!stream.done && t.isMounted()) {
+            refresh()
+          } else {
             t.modState(s => s.copy(progress = s.progress.copy(running = false, finished = true)))
             t.props.actionsBackend.imagePulled()
             PlatformService.current.sendEvent(EventCategory.Image, EventAction.Pull, "FinishPulled")
@@ -132,7 +133,7 @@ object PullModalDialogRender {
                 <.i(^.className := "list-group-item-text")("Description"),
                 <.p(^.className := "list-group-item-heading", ^.wordWrap := "break-word", P.image.description)
               ),
-              (running || finished) ?= table(S.progress.events)
+              running ?= table(S.progress.events)
             )
           )
           ,

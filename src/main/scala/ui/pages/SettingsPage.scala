@@ -168,11 +168,11 @@ object SettingsPageRender {
               "To connect this app with Docker you need to enable the Docker Remote API:"),
             <.ul(
               <.li(
-                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X", ^.target := "_blank",
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/OS-X-Installable-Desktop-version", ^.target := "_blank",
                   <.i(^.className := "fa fa-apple"), "Mac OS X config")
               ),
               <.li(
-                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/windows", ^.target := "_blank",
+                <.a(^.href := "https://github.com/felixgborrego/docker-ui-chrome-app/wiki/OS-X-Installable-Desktop-version", ^.target := "_blank",
                   <.i(^.className := "fa fa-windows"), "Windows config")
               ),
               <.li(

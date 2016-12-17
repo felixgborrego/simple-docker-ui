@@ -34,6 +34,11 @@ object Button {
       val element = jQuery(t.getDOMNode()).asInstanceOf[scalajs.js.Dynamic]
       element.tooltip()
     }
+
+    def willUnmount() = {
+      val element = jQuery(t.getDOMNode()).asInstanceOf[scalajs.js.Dynamic]
+      element.tooltip("hide")
+    }
   }
 
   def apply(text: String, icon: String, title: String = "", disabled: Boolean = false)(command: => Future[Any]) =
@@ -49,6 +54,7 @@ private object ButtonRender {
     .backend(new Backend(_))
     .render((P, S, B) => vdom(P, S, B))
     .componentDidMount(_.backend.didMount())
+    .componentWillUnmount(_.backend.willUnmount())
     .build
 
   val data_toggle = "data-toggle".reactAttr
