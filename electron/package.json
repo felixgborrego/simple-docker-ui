@@ -1,14 +1,20 @@
 {
-  "name": "electron-dockerui",
-  "version": "0.5.1",
-  "description": "A minimal Electron application",
+  "name": "SimpleDockerUI",
+  "version": "0.5.3",
+  "productName": "SimpleDockerUI",
+  "description": "Simple UI and Manager for Docker",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "debug": "cd .. && sbt \"project electron\" \"fastOptJS\" && cd electron && electron .",
     "test": "sbt test",
-    "package": "electron-packager . SimpleDockerUI --platform=darwin --arch=x64 --overwrite --icon=img/logo_small.icns --ignore='src' --ignore='target' --asar",
-    "dmg": "electron-installer-dmg SimpleDockerUI-darwin-x64/SimpleDockerUI.app SimpleDockerUI --icon=img/logo_small.icns --overwrite"
+
+    "package-mac": "electron-packager . SimpleDockerUI --platform=darwin --arch=x64 --overwrite --out dist/ --icon=img/logo_small.icns --ignore=src --ignore=target --asar=true",
+    "dmg": "electron-installer-dmg dist/SimpleDockerUI-darwin-x64/SimpleDockerUI.app SimpleDockerUI --out dist/  --icon=img/logo_small.icns --overwrite",
+
+
+    "package-exe": "electron-packager . SimpleDockerUI --platform=win32 --arch=x64 --out dist/ --overwrite --icon=img/logo_small.ico --ignore=src --ignore=target --asar=true --win32metadata.ProductName=SimpleDockerUI --win32metadata.CompanyName=SimpleDockerUI",
+    "create-installer-win": "node installers/windows/createinstaller.js"
   },
   "repository": {
     "type": "git",
@@ -29,11 +35,17 @@
   "homepage": "https://github.com/felixgborrego/docker-ui-chrome-app",
   "devDependencies": {
     "electron": "^1.4.6",
-    "electron-installer-dmg": "^0.1.2"
+    "electron-installer-dmg": "^0.1.2",
+    "electron-packager": "^8.3.0",
+    "electron-winstaller": "^2.5.0"
   },
   "dependencies": {
+    "devtron": "^1.4.0",
     "docker-modem": "^0.3.1",
     "split-ca": "^1.0.0",
-    "universal-analytics": "0.4.6"
+    "universal-analytics": "0.4.6",
+    "fs-plus": "*",
+    "rimraf": "*",
+    "yargs": "*"
   }
 }

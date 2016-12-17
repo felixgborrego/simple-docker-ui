@@ -20,9 +20,8 @@ bower install
 ### Compile Scala.js
 
 ```
-sbt
-project electron
-~fullOptJS'
+export SBT_OPTS="-Xmx1G"
+sbt electron/fullOptJS
 ```
 
 ### Run the Electron UI
@@ -32,9 +31,17 @@ npm start
 ```
 
 ### Package the native app
+
 ```
-npm install electron-installer-dmg
-nom install electron-installer
-npm run-script package
+cd electron
+npm run-script package-mac
 npm run-script dmg
+```
+
+###Package Native app for Windows
+
+```
+cd electron
+npm run-script package-exe
+npm run-script create-installer-win
 ```

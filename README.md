@@ -1,11 +1,11 @@
 ## Docker UI
  
-Simple Docker UI for Chrome is an unofficial developer tool for monitoring and managing your local Docker containers.
+Simple Docker UI is an unofficial developer tool for monitoring and managing your local Docker containers.
+Available on for OS X, Windows, ChromeOS and Linux (soon)
 
-<a target="_blank" href="https://chrome.google.com/webstore/detail/jfaelnolkgonnjdlkfokjadedkacbnib">
-<img alt="Try it now" src="https://raw.github.com/GoogleChrome/chrome-app-samples/master/tryitnowbutton_small.png" title="Click here to install this app from the Chrome Web Store"></img>
-</a>
-
+* [Download Windows version](releases/) 
+* [Download OS X version](releases/) 
+* [Download Chrome plugin version](https://chrome.google.com/webstore/detail/jfaelnolkgonnjdlkfokjadedkacbnib)
 
 This app uses Docker Remote Api.
 Please note this is a beta version and only provides a basic set of features.
@@ -33,16 +33,17 @@ Any feedback is more than welcome!
 
 ### Config
 
-[Connect on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Mac-OS-X)
+[Connect on OS X](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/OS-X-Installable-Desktop-version)
+
+[Connect on Windows](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/Windows-installable-Desktop-version)
 
 [Connect on Linux](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/linux)
-
-[Connect on Windows](https://github.com/felixgborrego/docker-ui-chrome-app/wiki/windows)
 
 ### Stack
 
 *  [Scala.js](http://www.scala-js.org/)
 *  [React on Scala.js](https://github.com/japgolly/scalajs-react)
+*  [Electron](http://electron.atom.io)
 *  Bootstrap
 *  Bower
 *  Momentjs
