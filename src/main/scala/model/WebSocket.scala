@@ -6,15 +6,10 @@ import scala.scalajs.js
 // Shared code between Chrome app WebSocket and Node.js Socket
 trait BasicWebSocket {
 
-  var onmessage: js.Function1[ {def data: js.Any}, _]
-
-  var onopen: js.Function1[ Unit, _]
-
-  var onclose: js.Function1[ {def code: Int}, _]
-
-  var onerror: js.Function1[ {def message: String}, _]
-
-  def send(data: String): Unit
+  def send(data: js.Any): Unit
 
   def close(code: Int, reason: String): Unit
+
+  def addEventListener(`type`: String, listener: js.Function1[Any, _]): Unit
+  def removeEventListener(`type`: String, listener: js.Function1[Any, _]): Unit
 }

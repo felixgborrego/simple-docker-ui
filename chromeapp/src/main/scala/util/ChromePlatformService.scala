@@ -16,6 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import scala.scalajs.js.Function1
+import scala.scalajs.js.typedarray.ArrayBuffer
 
 object ChromePlatformService extends PlatformService {
   override def appVersion: String = chrome.runtime.getManifest().version
@@ -208,32 +209,14 @@ class ChromeDockerConnection(val connection: Connection) extends DockerConnectio
 // Bridge between common class and Chrome WebSocket
 class WebSocketAdapter(socket: WebSocket) extends BasicWebSocket {
 
-  override def send(data: String): Unit = socket.send(data)
+  override def send(data: js.Any): Unit = socket.send(data.asInstanceOf[ArrayBuffer])
 
   override def close(code: Int, reason: String): Unit = socket.close(code, reason)
 
-  socket.onopen = { event: Event => this.onopen() }
-  socket.onmessage = { event: MessageEvent =>
-    this.onmessage(new {
-      def data = event.data.asInstanceOf[js.Any]
-    })
-  }
-  socket.onclose = { event: CloseEvent =>
-    this.onclose(new {
-      def code = event.code
-    })
-  }
+  def addEventListener(`type`: String, listener: js.Function1[Any, _]): Unit =
+    socket.addEventListener(`type`,listener)
 
-  socket.onerror = { event: ErrorEvent =>
-    this.onerror(new {
-      def message = event.message
-    })
-  }
-
-  override var onopen: Function1[Unit, _] = { x: Unit => () }
-  override var onmessage: js.Function1[ {def data: js.Any}, _] = { x: {def data: js.Any} => () }
-  override var onclose: js.Function1[ {def code: Int}, _] = { x: {def code: Int} => () }
-  override var onerror: js.Function1[ {def message: String}, _] = { x: {def message: String} => () }
-
+  def removeEventListener(`type`: String, listener: js.Function1[Any, _]): Unit =
+    socket.addEventListener(`type`,listener)
 
 }

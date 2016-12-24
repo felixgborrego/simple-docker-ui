@@ -124,7 +124,7 @@ case class DockerClient(con: DockerConnection) {
   }
 
   private def removeImage(imageId: String): Future[Unit] = {
-    val id = imageId.replace("sha256:","")
+    val id = imageId.replace("sha256:", "")
     con.delete(path = s"/images/$id").map { xhr =>
       log.info("[dockerClient.removeImage] return: " + xhr.statusCode)
     }.transform(identity, ex => ex match {
@@ -204,10 +204,11 @@ case class DockerClient(con: DockerConnection) {
       }
 
       val tasksFut = orderedImages.map { imagesToGC =>
-        val tasks = imagesToGC.map { image => () => {
-          status(s"Removing ${image.id}/ ${image.RepoTags.mkString(" ")}")
-          removeImage(image)
-        }
+        val tasks = imagesToGC.map { image =>
+          () => {
+            status(s"Removing ${image.id}/ ${image.RepoTags.mkString(" ")}")
+            removeImage(image)
+          }
 
         }
         FutureUtils.sequenceWithDelay(tasks, FutureUtils.LongDelay, ignoreErrors = true)
@@ -240,6 +241,7 @@ case class DockerClient(con: DockerConnection) {
         case head :: tail => removeContainer(head.Id).andThen { case _ => delete(tail) }
         case Nil => Future.successful(())
       }
+
       delete(all.drop(KeepInGarbageCollection).toList)
     }
   }
@@ -338,7 +340,11 @@ case class DockerClient(con: DockerConnection) {
 
   // https://docs.docker.com/engine/reference/api/docker_remote_api_v1.19/#get-container-stats-based-on-resource-usage
   def containerStats(containerId: String)(updateUI: (Option[ContainerStats], ConnectedStream) => Unit): Unit =
-  con.containerStats(containerId)(updateUI)
+    con.containerStats(containerId)(updateUI)
+
+  def resizeTTY(containerId: String, h: Int, w: Int) = {
+    con.post(path = s"/containers/$containerId/resize?h=$h&w=$w")
+  }
 }
 
 trait ConnectedStream {

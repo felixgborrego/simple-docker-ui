@@ -72,27 +72,9 @@ div {
   -webkit-user-select: auto;
 }
 
-
-
-.terminal {
-    float: left;
-    border: #000 solid 5px;
-    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
-    font-size: 11px;
-    color: #f0f0f0;
-    background: #000;
-}
-
 .reverse-video {
     color: #000;
     background: #f0f0f0;
-}
-
-.terminal-col-fixed{
-    width:1030px;
-    //background:red;
-    //position:fixed;
-    height:100%;
 }
 
 .modal-backdrop {

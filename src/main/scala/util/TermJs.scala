@@ -1,11 +1,10 @@
 package util
 
-import org.scalajs.dom
 import org.scalajs.dom.raw.Element
 
 import scala.scalajs.js
 import scala.scalajs.js.Object
-import scala.scalajs.js.annotation.JSName
+import scala.scalajs.js.annotation.{JSName, ScalaJSDefined}
 
 object termJs {
 
@@ -26,27 +25,33 @@ object termJs {
     //def reset(): Unit = js.native
 
     def destroy(): Unit = js.native
+
+    // use addons fit.js
+    def fit(): Unit = js.native
+
+    // use addons attach.js
+    def attach(any: Any): Unit = js.native
+
+    def proposeGeometry(): Geometry = js.native
   }
 
 
-  def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = ROWS, screenKeys = true, useStyle = true)
+  def DefaultWithStdin = js.Dynamic.literal(cols = 150, rows = ROWS, screenKeys = true, cursorBlink = true)
 
   def DefaultWithOutStdin = js.Dynamic.literal(cols = 150, rows = ROWS, screenKeys = false, useStyle = false, cursorBlink = false)
 
   def initTerminal(terminal: Terminal, element: Element) = {
     terminal.open(element)
+    terminal.fit()
   }
 
   val ROWS = 24
-  def autoResize(terminal: Terminal, element: Element) = {
-    val width = dom.document.body.clientWidth
-
-    // get approximated size. TODO Find a better way to map between windows width and num columns
-    val cols = (width / 6.8).toInt
-    val extraCols = if (cols < 129) -3 else if (cols < 148) -2 else if (cols < 180) -1 else 0
-    val fixedCols = cols + extraCols
-    terminal.resize(fixedCols, ROWS)
-  }
 
 }
+
+@ScalaJSDefined
+class Geometry(
+  val cols: Int,
+  val rows: Int
+) extends js.Object
 

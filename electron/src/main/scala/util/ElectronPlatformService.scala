@@ -112,12 +112,15 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
         if (msg == null) {
           if (dialOptions.hijack) {
             processHijackResponse(onWebSocketCreated, response)
+
           } else if (dialOptions.isStream) {
             def onComplete { p.success(Response("", 200)) }
             processStreamingResponse(onStreamingData, shouldAbort, onComplete, response)
+
           } else {
             val responseText = js.Dynamic.global.JSON.stringify(response).asInstanceOf[String]
             p.success(Response(responseText, 200))
+
           }
         } else {
           log.debug(s"dial fail: $msg")
@@ -197,6 +200,7 @@ class ElectronDockerConnection(val connection: Connection) extends DockerConnect
       hijack = true,
       openStdin = true
     )
+
     dial(options, onWebSocketCreated = onWebSocketCreated)
       .onFailure { case ex: Exception =>
         log.debug(s"Unable to connect WS - ${ex.toString}")

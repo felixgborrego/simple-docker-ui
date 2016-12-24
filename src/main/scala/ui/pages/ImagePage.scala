@@ -127,7 +127,7 @@ object ImagePageRender {
   def vdomCommands(state: State, B: Backend) =
     Some(<.div(^.className := "panel-footer",
       <.div(^.className := "btn-group btn-group-justified",
-        <.div(^.className := "btn-group", Button("Deploy container", "glyphicon-play", "Create container using this image")(B.showCreateDialog)),
+        <.div(^.className := "btn-group", Button("Deploy", "glyphicon-play", "Create container using this image")(B.showCreateDialog)),
         <.div(^.className := "btn-group", Button("Remove", "glyphicon-trash")(B.removeImage))
         )
       )

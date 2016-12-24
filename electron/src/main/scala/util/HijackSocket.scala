@@ -1,59 +1,68 @@
 package util
 
 import model.BasicWebSocket
+import org.scalajs.dom.raw.Event
 import util.logger.log
-
 import scala.language.reflectiveCalls
 import scala.scalajs.js
-import scala.scalajs.js.Function1
+import scala.scalajs.js.annotation.{JSExport, JSExportAll}
+
+import js.Dynamic.{ global => g, newInstance => jsnew }
 
 @js.native
 trait HijackSocket extends js.Object {
-  def addListener(eventName: String, listener: js.Function1[js.Dynamic, _]): this.type = js.native
-  def write(data: String): Unit = js.native
+  def addListener(eventName: String, listener: js.Function1[_, _]): this.type = js.native
+
+  def removeListener(eventName: String, listener: js.Function1[_, _]): this.type = js.native
+  def write(data: js.Any): Unit = js.native
   def destroy(): Unit = js.native
 }
 
+@JSExportAll
+case class CustomTextEvent(data: String)
 
+@JSExportAll
 class HijackWebSocket(socket: HijackSocket) extends BasicWebSocket {
 
   socket.addListener("data", { socketData: js.Any =>
     log.debug(s"HijackWebSocket data: $socketData")
-    onmessage(new {
-      def data = socketData
-    })
   })
 
   socket.addListener("connect", { socketData: js.Any =>
     log.debug(s"HijackWebSocket connect: $socketData")
-    onopen()
   })
 
-  socket.addListener("close", { socketData: js.Any =>
-    log.debug(s"HijackWebSocket close: $socketData")
-    onclose(new {
-      def code = 1
-    })
-  })
-
-  socket.addListener("error", { socketData: js.Dynamic =>
-    log.debug(s"HijackWebSocket error: $socketData")
-    onerror(new {
-      def message = socketData.message.toString
-    })
-  })
-
-  override def send(data: String): Unit =  {
+  @JSExport
+  override def send(data: js.Any): Unit =  {
     socket.write(data)
   }
 
+  @JSExport
   override def close(code: Int, reason: String): Unit = {
     socket.destroy()
   }
 
-  // Default impl, will be replaced by the attached Terminal
-  override var onopen: Function1[Unit, _] = { x: Unit => () }
-  override var onmessage: js.Function1[ {def data: js.Any}, _] = { x: {def data: js.Any} => () }
-  override var onclose: js.Function1[ {def code: Int}, _] = { x: {def code: Int} => () }
-  override var onerror: js.Function1[ {def message: String}, _] = { x: {def message: String} => () }
+  @JSExport
+  def addEventListener(`type`: String, listener: js.Function1[Any, _]): Unit = {
+    if (`type` == "message") {
+      socket.addListener("data", { socketData: js.Any =>
+        log.debug(s"HijackWebSocket data: $socketData")
+        val decoder = jsnew(g.TextDecoder)("utf-8")
+        val data = decoder.decode(socketData).replace("\r$/g", "\r\n")
+        listener(new CustomTextEvent(data.toString.replace("\n", "\r\n")))
+        ()
+      })
+    } else {
+      socket.addListener(`type`, listener)
+    }
+
+  }
+
+  @JSExport
+  def removeEventListener(`type`: String, listener: js.Function1[Any, _]): Unit = {
+    if (`type` == "message") {
+      socket.removeListener("data", listener)
+    }
+    socket.removeListener(`type`, listener)
+  }
 }

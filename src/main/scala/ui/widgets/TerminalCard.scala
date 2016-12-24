@@ -4,6 +4,8 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB}
 import model.BasicWebSocket
 import org.scalajs.dom
+import org.scalajs.dom.{Event, UIEvent}
+import util.Geometry
 import util.logger._
 import util.termJs._
 
@@ -21,8 +23,8 @@ object TerminalCard {
   val RESET = "\u001B[0m"
   val WS_CLOSE_ABNORMAL = 1006
 
-  def apply(info: TerminalInfo)(connectionFactory: () => Future[BasicWebSocket]) = {
-    val props = Props(info, connectionFactory)
+  def apply(info: TerminalInfo)(connectionFactory: () => Future[BasicWebSocket], resize: (Geometry) => Unit) = {
+    val props = Props(info, connectionFactory, resize = resize)
     TerminalCardRender.component(props)
   }
 
@@ -32,72 +34,49 @@ object TerminalCard {
 
   case class TerminalInfo(stdinOpened: Boolean, stdinAttached: Boolean, stOutAttached: Boolean)
 
-  case class Props(info: TerminalInfo, connectionFactory: () => Future[BasicWebSocket])
+  case class Props(info: TerminalInfo, connectionFactory: () => Future[BasicWebSocket], resize: (Geometry) => Unit)
 
   case class Backend(t: BackendScope[Props, State]) {
 
     def didMount(): Unit = {
       val config = if (t.props.info.stdinOpened) util.termJs.DefaultWithStdin else util.termJs.DefaultWithOutStdin
       val terminal = new Terminal(config)
-      val element = dom.document.getElementById("terminal")
-      initTerminal(terminal, element)
+
+      val element = dom.document.getElementById("terminal-container")
+
       val wsFut = t.props.connectionFactory()
+      initTerminal(terminal, element)
 
       wsFut.onSuccess { case ws =>
+        ws.send("\n")
         connectToWS(terminal, ws)
       }
 
 
       terminal.on("title", (data: String) => t.modState(s => s.copy(title = data)))
 
-      dom.window.addEventListener("resize", (e: dom.Event) => {
-        autoResize(terminal, element)
+      dom.window.addEventListener("resize", { event: Event =>
+        println("Resize event!! ")
+        resize()
       })
+    }
 
-      scalajs.js.timers.setTimeout(200) {
-        autoResize(terminal, element)
+    def resize() = {
+      t.state.currentTerminal.foreach { currentTerminal =>
+        currentTerminal.fit()
+        val geometry = currentTerminal.proposeGeometry()
+        println(s"Current geometry: ${geometry.cols}, ${geometry.rows}")
+        t.props.resize(geometry)
       }
     }
 
     def connectToWS(terminal: Terminal, ws: BasicWebSocket): Unit = {
       t.modState(_.copy(currentWS = Some(ws), currentTerminal = Some(terminal)))
 
-      ws.onmessage = (event: {def data: js.Any}) => {
-        terminal.write(event.data.toString.replace("\n", "\r\n"))
-      }
+      terminal.attach(ws)
 
-      ws.onopen = (_: Unit) => {
-        log.info(s"Connected")
-        val info = t.props.info
-        if (info.stdinOpened) {
-          terminal.write(s"${GREEN}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STDIN attached: ${info.stdinAttached}, STOUT attached:${info.stOutAttached}] $RESET\r\n")
-        } else {
-          terminal.write(s"${RED}Connected $LIGHT_GRAY[STDIN open: ${info.stdinOpened}, STOUT attached:${info.stOutAttached}] ]$RESET\r\n")
-          scalajs.js.timers.setTimeout(200) {
-            //remove focuse from the terminal
-            terminal.blur()
-          }
-        }
-      }
-      ws.onclose = (event: {def code: Int}) => {
-        log.info(s"onclose code: ${event.code}")
-        if (event.code == WS_CLOSE_ABNORMAL) {
-          log.info("try to reconnect")
-          terminal.destroy()
-          didMount() // reconnect
-        } else {
+      ws.addEventListener("close", { e: Any =>
           terminal.write("\r\n\u001B[31m[Disconnected] \u001B[0m")
-        }
-      }
-      ws.onerror = (event: {def message: String}) => {
-        log.info("some error has occurred " + event.message)
-        terminal.write("\u001B[31m[Connection error: " + event.message + "]\u001B[0m")
-      }
-
-      terminal.on("data", (data: String) => {
-        if (t.props.info.stdinOpened) {
-          ws.send(data)
-        }
       })
 
       ()
@@ -105,12 +84,6 @@ object TerminalCard {
 
     def willUnmount() = {
       log.info("Terminal willUnmount")
-      t.state.currentWS.foreach{ ws =>
-        ws.onclose = { x: {def code: Int} => () }
-        ws.onerror = (x: {def message: String}) => {}
-        ws.onmessage = (x: {def data: js.Any}) => {}
-        ws.close(1000, "Disconnect ws")
-      }
       t.state.currentTerminal.foreach(_.destroy())
     }
   }
@@ -128,8 +101,7 @@ object TerminalCardRender {
     .componentWillUnmount(_.backend.willUnmount())
     .build
 
-  def vdom(S: State, props: Props) =
-    <.div(^.id := "terminalPanel", ^.className := "terminal-col-fixed ",
-      <.div(^.id := "terminal")
-    )
+  def vdom(S: State, props: Props) = {
+    <.div(^.id := "terminal-container", ^.className := "panel-body")
+  }
 }

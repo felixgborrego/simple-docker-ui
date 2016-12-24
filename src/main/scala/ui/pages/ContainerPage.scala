@@ -25,7 +25,7 @@ object ContainerPage {
                    actionStopping: Boolean = false,
                    stats: Option[ContainerStats] = None,
                    statsConnectedStream: Option[ConnectedStream] = None,
-                   tabSelected: ContainerPageTab = TabNone,
+                   tabSelected: ContainerPageTab = TabMain,
                    runCommand: Option[String] = None)
 
   case class Props(ref: WorkbenchRef, containerId: String)
@@ -47,9 +47,6 @@ object ContainerPage {
           t.modState(s => s.copy(error = Some(s"Unable to connect")))
       }
 
-      result.onSuccess { case _ =>
-        showTab(TabInfo)
-      }
     }
 
     def willUnMount(): Unit = stopStats()
@@ -63,7 +60,7 @@ object ContainerPage {
     def start() =
       t.props.ref.client.get.startContainer(t.props.containerId).map { info =>
         PlatformService.current.sendEvent(EventCategory.Container, EventAction.Start)
-        t.modState(s => s.copy(tabSelected = TabNone))
+        t.modState(s => s.copy(tabSelected = TabMain))
         refresh()
       }.recover {
         case ex: Exception => t.modState(s => s.copy(error = Some(ex.getMessage)))
@@ -88,6 +85,10 @@ object ContainerPage {
     def attach(): Future[BasicWebSocket] =
       t.props.ref.client.get.attachToContainer(t.props.containerId)
 
+    def resize(g: Geometry): Unit = {
+      // TODO t.props.ref.client.get.resizeTTY(t.props.containerId, g.rows, w)
+    }
+
     def showImage(): Unit = t.props.ref.client.map { client =>
       client.images().map { images =>
         images.filter(_.Id == t.state.info.get.Image).map { image =>
@@ -99,6 +100,9 @@ object ContainerPage {
     def textCommands: Seq[(String, String)] = {
       val id = StringUtils.subId(t.props.containerId)
       t.state.tabSelected match {
+        case TabMain => Seq(
+          (s"docker inspect $id", "Inspect container")
+        )
         case TabTerminal => Seq(
           (s"docker attach $id", "Attach to the current container stdin"),
           (s"docker exec -i -t $id bash", "Open a new bash session to the container")
@@ -153,8 +157,7 @@ object ContainerPageRender {
   def vdom(P: Props, S: State, B: Backend): ReactElement =
     <.div(
       S.error.map(Alert(_)),
-      S.info.map(vdomInfo(_, S, P, B)),
-      vDomTabs(S, B)
+      vDomTabs(P, S, B)
     )
 
 
@@ -247,7 +250,7 @@ object ContainerPageRender {
     ))
 
 
-  def vDomTabs(S: State, B: Backend): ReactElement = {
+  def vDomTabs(P: Props, S: State, B: Backend): ReactElement = {
     val terminalInfo = S.info.map { info =>
       TerminalInfo(stdinOpened = info.Config.OpenStdin && info.State.Running,
         stdinAttached = info.Config.AttachStdin,
@@ -258,21 +261,25 @@ object ContainerPageRender {
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.ul(^.className := "nav nav-tabs",
+          <.li(^.role := "presentation", (S.tabSelected == TabMain) ?= (^.className := "active"),
+            <.a(^.onClick --> B.showTab(TabMain), <.i(^.className := "fa fa-info"), " Info")
+          ),
           S.info.exists(_.State.Running) ?= <.li(^.role := "presentation", (S.tabSelected == TabInfo) ?= (^.className := "active"),
             <.a(^.onClick --> B.showTab(TabInfo), <.i(^.className := "fa fa-bar-chart"), " Stats")
+          ),
+          <.li(^.role := "presentation", (S.tabSelected == TabChanges) ?= (^.className := "active"),
+            <.a(^.onClick --> B.showTab(TabChanges), <.i(^.className := "fa fa-history"), " File system changes")
           ),
           <.li(^.role := "presentation", (S.tabSelected == TabTerminal) ?= (^.className := "active"),
             <.a(^.onClick --> B.showTab(TabTerminal), ^.className := "glyphicon glyphicon-console",
               " Terminal ",
               <.i(^.className := (if (terminalInfo.stdinOpened) "fa fa-chain" else "fa fa-chain-broken"))
             )
-          ),
-          <.li(^.role := "presentation", (S.tabSelected == TabChanges) ?= (^.className := "active"),
-            <.a(^.onClick --> B.showTab(TabChanges), <.i(^.className := "fa fa-history"), " File system changes")
           )
         ),
         <.div(^.className := "panel-body panel-config",
-          (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach),
+          (S.tabSelected == TabMain) ?= S.info.map(vdomInfo(_, S, P, B)),
+          (S.tabSelected == TabTerminal) ?= TerminalCard(terminalInfo)(B.attach, B.resize),
           (S.tabSelected == TabInfo) ?= vdomInfo(S, B),
           (S.tabSelected == TabChanges) ?= S.info.map(vdomChanges(S.changes, _))
         )
@@ -327,7 +334,7 @@ object ContainerPageRender {
 
 sealed trait ContainerPageTab
 
-case object TabNone extends ContainerPageTab
+case object TabMain extends ContainerPageTab
 
 case object TabInfo extends ContainerPageTab
 case object TabTerminal extends ContainerPageTab
