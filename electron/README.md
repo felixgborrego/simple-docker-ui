@@ -40,6 +40,8 @@ npm run-script dmg
 
 ###Package Native app for Windows
 Require Wine 
+brew install wine 
+brew install mono
 
 ```
 cd electron

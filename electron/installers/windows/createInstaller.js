@@ -14,7 +14,7 @@ function getInstallerConfig () {
     const outPath = path.join(rootPath, 'dist')
 
     return Promise.resolve({
-       appDirectory: path.join(outPath, 'SimpleDockerUI-win32-x64/'),
+       appDirectory: path.join(outPath, 'SimpleDockerUI-win32-x64'),
        authors: 'Felix',
        name: 'SimpleDockerUI',
        title: 'SimpleDockerUI',
@@ -25,3 +25,4 @@ function getInstallerConfig () {
        setupIcon: path.join(rootPath, 'img', 'logo_small.ico')
    })
 }
+
