@@ -1,5 +1,6 @@
 package util
 
+import api.{DockerClient, DockerClientConfig}
 import model.Connection
 import org.scalajs.dom.ext.Ajax.InputData
 import util.logger.log
@@ -12,6 +13,7 @@ class ModemOptions(val socketPath: String,
                    val host: String,
                    val protocol: String,
                    val port: String,
+                   val timeout: Int,
                    val ca: js.UndefOr[InputData] = js.undefined,
                    val cert: js.UndefOr[InputData] = js.undefined,
                    val key: js.UndefOr[InputData] = js.undefined
@@ -48,7 +50,7 @@ object DockerModem {
     log.debug(s"Building Docker modem for Url: $connection")
     val modemOptions = {
       if (connection.url.toLowerCase().startsWith("unix://")) {
-        new ModemOptions(socketPath = connection.url.drop("unix://".size), host = "localhost", protocol = "http", port = null)
+        new ModemOptions(socketPath = connection.url.drop("unix://".size), host = "localhost", timeout=2000, protocol = "http", port = null)
       } else {
         val protocol = connection.url.takeWhile(_ != ':')
         val host = connection.url.drop(protocol.size).drop("://".size).takeWhile(_ != ':')
@@ -71,7 +73,7 @@ object DockerModem {
             (js.undefined, js.undefined, js.undefined)
           }
 
-        new ModemOptions(socketPath = null, host = host, protocol = protocol, port = port, ca = envCa, cert = envCert, key = envKey)
+        new ModemOptions(socketPath = null, host = host, protocol = protocol, port = port, ca = envCa, cert = envCert, key = envKey, timeout = DockerClientConfig.HttpTimeOut)
       }
     }
     log.debug(s"modemOptions: protocol: ${modemOptions.protocol} path: ${modemOptions.socketPath}")
