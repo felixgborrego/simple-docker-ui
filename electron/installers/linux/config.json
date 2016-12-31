@@ -1,0 +1,12 @@
+{
+  "icon": "img/Icon.png",
+  "categories": [
+    "Utility"
+  ],
+  "lintianOverrides": [
+    "changelog-file-missing-in-native-package"
+  ],
+  "productName": "SimpleDockerUI",
+  "productDescription": "Simple Docker UI is an unofficial developer tool for monitoring and managing your Docker containers."
+
+}

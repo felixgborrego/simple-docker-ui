@@ -30,7 +30,7 @@ cd electron
 npm start
 ```
 
-### Package the native app
+### Package the native app for Mac
 
 ```
 cd electron
@@ -39,9 +39,18 @@ npm run-script dmg
 ```
 
 ###Package Native app for Windows
+Require Wine 
 
 ```
 cd electron
 npm run-script package-exe
 npm run-script create-installer-win
+``` 
+
+##Package Native app for Linux
+```
+cd electron
+brew install fakeroot dpkg
+npm run-script package-linux
+npm run-script create-installer-debian
 ```

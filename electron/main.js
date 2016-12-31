@@ -24,7 +24,7 @@ let mainWindow
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1100, height: 770})
+  mainWindow = new BrowserWindow({width: 1100, height: 770, icon: 'img/logo_small.png'})
 
   mainWindow.setMenu(null)
 
