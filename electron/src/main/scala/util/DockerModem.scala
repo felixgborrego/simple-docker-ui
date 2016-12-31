@@ -50,7 +50,7 @@ object DockerModem {
     log.debug(s"Building Docker modem for Url: $connection")
     val modemOptions = {
       if (connection.url.toLowerCase().startsWith("unix://")) {
-        new ModemOptions(socketPath = connection.url.drop("unix://".size), host = "localhost", timeout=2000, protocol = "http", port = null)
+        new ModemOptions(socketPath = connection.url.drop("unix://".size), host = "localhost", timeout = DockerClientConfig.HttpTimeOut, protocol = "http", port = null)
       } else {
         val protocol = connection.url.takeWhile(_ != ':')
         val host = connection.url.drop(protocol.size).drop("://".size).takeWhile(_ != ':')
