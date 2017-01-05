@@ -1,6 +1,6 @@
 {
   "name": "SimpleDockerUI",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "productName": "SimpleDockerUI",
   "description": "Simple UI and Manager for Docker",
   "main": "main.js",
