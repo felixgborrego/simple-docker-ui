@@ -4,9 +4,6 @@
 
 ## Known limitations/bugs
 
-- Work witn errors with Unix sockets : unix:///var/run/docker.sock
-- Docker TLS is not supported yet.
-
 
 ## Development
 
