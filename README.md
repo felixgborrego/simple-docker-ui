@@ -7,6 +7,8 @@ Available for OS X, Windows, ChromeOS and Linux
 * [Download OS X version](https://github.com/felixgborrego/docker-ui-chrome-app/releases) 
 * [Download Linux version](https://github.com/felixgborrego/docker-ui-chrome-app/releases) 
 
+Deprecated version:
+
 * [Download Chrome plugin version](https://chrome.google.com/webstore/detail/jfaelnolkgonnjdlkfokjadedkacbnib)
 
 This app uses Docker Remote Api.
@@ -24,6 +26,7 @@ Any feedback is more than welcome!
 
 ### Main features
 
+* Native app for Windows, MacOS and Linux.
 * Garbage collection for unused containers. Removing containers that haven't been in use for the last few days.
 * Garbage collection for unused images, Keeping only the once used by a container.
 * Virtual terminal to log into the container.
@@ -49,6 +52,15 @@ Any feedback is more than welcome!
 *  Bootstrap
 *  Bower
 *  Momentjs
+
+###Contributing
+
+Compile and test it yourself:
+
+* [Electron app](electron/README.md)
+* [Chrome app](chromeapp/README.md)
+
+Contributions are more than welcome. Bug reports with specific reproduction steps are great. If you have a code contribution you'd like to make, open a pull request with suggested code.
 
 
 ### Copyright and License
