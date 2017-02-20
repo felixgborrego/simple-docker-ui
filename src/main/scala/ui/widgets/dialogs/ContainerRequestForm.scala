@@ -213,7 +213,7 @@ object ContainerRequestForm {
         case NoPorts => ""
         case CustomPorts => request.HostConfig.PortBindings
           .flatMap { case (containerPort, hostPorts) =>
-          hostPorts.map(h => (substringBefore(containerPort, "/"), h.HostPort))
+          hostPorts.map(h => (substringBeforeLast(containerPort, "/"), h.HostPort))
         }.filter(_._2.nonEmpty).map { case (internal, external) => s"-p $external:$internal" }
           .mkString(" ", " ", "")
       }

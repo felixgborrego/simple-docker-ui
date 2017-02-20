@@ -97,7 +97,7 @@ object ImagePageRender {
 
   def vdomInfo(imageInfo: ImageInfo, S: State, P: Props, B: Backend) = {
     import util.StringUtils._
-    val imageName = substringBefore(P.image.RepoTags.headOption.getOrElse(""), ":")
+    val imageName = substringBeforeLast(P.image.RepoTags.headOption.getOrElse(""), ":")
     val generalInfo = Map(
       "Id" -> P.image.id,
       "Name" -> imageName,

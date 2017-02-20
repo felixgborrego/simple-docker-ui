@@ -9,8 +9,8 @@ object StringUtils {
     }
   }
 
-  def substringBefore(s: String, k: String) = {
-    s.indexOf(k) match {
+  def substringBeforeLast(s: String, k: String) = {
+    s.lastIndexOf(k) match {
       case -1 => s
       case i => s.substring(0, i)
     }

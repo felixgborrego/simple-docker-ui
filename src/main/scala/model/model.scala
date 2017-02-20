@@ -13,7 +13,7 @@ import scala.util.Try
  */
 case class Connection(url: String) {
   import util.StringUtils._
-  def host = substringBefore(substringAfter(url, "://"), ":").replace("/var/run/docker.sock", "localhost")
+  def host = substringBeforeLast(substringAfter(url, "://"), ":").replace("/var/run/docker.sock", "localhost")
 }
 
 case class DockerMetadata(connectionInfo: String,
