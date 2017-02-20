@@ -2,6 +2,7 @@ package util
 
 import api.DockerClient
 import model.Connection
+import org.scalajs.dom.raw.Event
 import util.logger._
 
 import scala.concurrent.Future
@@ -28,6 +29,8 @@ trait PlatformService {
   def defaultUrl: Future[String]
 
   def checkIsLatestVersion(callback: (String => Unit)): Unit
+
+  def openExternalLink(event: Event): Unit
 
 }
 

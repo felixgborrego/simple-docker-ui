@@ -88,6 +88,8 @@ object ChromePlatformService extends PlatformService {
   }
 
   override def checkIsLatestVersion(callback: (String) => Unit): Unit = {} // Auto Chrome update
+
+  def openExternalLink(event: Event): Unit = {}  // Already in the browser
 }
 
 

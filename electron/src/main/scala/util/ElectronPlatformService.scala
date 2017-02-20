@@ -6,6 +6,7 @@ import model.{BasicWebSocket, Connection, DockerEvent}
 import nodejs.raw.EventEmitter
 import org.scalajs.dom
 import org.scalajs.dom.ext.Ajax.InputData
+import org.scalajs.dom.raw.Event
 import util.EventsCustomParser.DockerEventStream
 import util.PullEventsCustomParser.{EventStatus, EventStream}
 import util.logger.log
@@ -89,6 +90,14 @@ object ElectronPlatformService extends PlatformService {
   }
 
   override def checkIsLatestVersion(callback: (String) => Unit): Unit = CheckIsLatestVersion.check(callback)
+
+
+  def openExternalLink(event: Event): Unit = {
+    val shell = js.Dynamic.global.require("electron").shell
+    event.preventDefault()
+    shell.openExternal(event.target.asInstanceOf[Dynamic].href)
+  }
+
 }
 
 class ElectronDockerConnection(val connection: Connection) extends DockerConnection {

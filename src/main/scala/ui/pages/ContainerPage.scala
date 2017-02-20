@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactElement}
 import model.stats.ContainerStats
 import model.{BasicWebSocket, ContainerInfo, ContainerTop, FileSystemChange}
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.raw.{Event, WebSocket}
 import ui.WorkbenchRef
 import ui.widgets.TerminalCard.TerminalInfo
 import ui.widgets._
@@ -128,6 +128,10 @@ object ContainerPage {
       stream.abort()
       t.modState(s => s.copy(statsConnectedStream = None))
     }
+
+    def openExternalLink(event: Event): Unit = {
+      PlatformService.current.openExternalLink(event)
+    }
   }
 
 
@@ -191,7 +195,7 @@ object ContainerPageRender {
         vdomCommands(S, B)
       ),
       InfoCard(executionInfo),
-      InfoCard(networkInfo, InfoCard.SMALL, None, Seq.empty, vdomServiceUrl(containerInfo, P))
+      InfoCard(networkInfo, InfoCard.SMALL, None, Seq.empty, vdomServiceUrl(B, containerInfo, P))
     )
   }
 
@@ -221,12 +225,12 @@ object ContainerPageRender {
     )
   }
 
-  def vdomServiceUrl(containerInfo: ContainerInfo, P: Props) = {
-    val ip = P.ref.connection.map(_.ip).getOrElse("")
+  def vdomServiceUrl(B: Backend, containerInfo: ContainerInfo, P: Props) = {
+    val host = P.ref.connection.map(_.host).getOrElse("")
     containerInfo.NetworkSettings.ports.map {
-      case (external, internal) => ip + ":" + external
+      case (external, _) => host + ":" + external
     }
-  }.map(url => <.div(^.className := "panel-footer", <.a(^.href := s"http://$url", ^.target := "_blank")(url))).headOption
+  }.map(url => <.div(^.className := "panel-footer", <.a(^.href := s"http://$url", ^.target := "_blank", ^.onClick ==> B.openExternalLink )(url))).headOption
 
   def vdomCommands(state: State, B: Backend) =
     Some(<.div(^.className := "panel-footer",
