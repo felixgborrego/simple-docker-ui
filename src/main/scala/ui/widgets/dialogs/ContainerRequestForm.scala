@@ -81,7 +81,13 @@ object ContainerRequestForm {
           HostConfig = hostConfig.copy(
             PublishAllPorts = false,
             PortBindings = t.props.initialConfig.portBindings.map { case (containerPort, host) =>
-              (containerPort, if (host.isEmpty) Seq(NetworkSettingsPort(HostIp = "", HostPort = "")) else host)
+              val allPorts = if (host.isEmpty) Seq(NetworkSettingsPort(HostIp = "", HostPort = "")) else host
+              val hostPortsWithDefault = allPorts.map {
+                case NetworkSettingsPort(ip, "") => NetworkSettingsPort(ip, containerPort.takeWhile(_ != '/'))
+                case other => other
+              }
+
+              (containerPort, hostPortsWithDefault)
             }
           )
         )
