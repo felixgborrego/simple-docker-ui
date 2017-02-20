@@ -12,7 +12,7 @@ object CheckIsLatestVersion {
 
   case class Release(tag_name: String)
 
-  val Url = "https://api.github.com/repos/felixgborrego/docker-ui-chrome-app/releases/latest"
+  val Url = "https://api.github.com/repos/felixgborrego/simple-docker-ui/releases/latest"
 
   def latestVersion(): Future[String] = {
     Ajax.get(Url, timeout = 5000).map { xhr =>
