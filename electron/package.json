@@ -1,6 +1,6 @@
 {
   "name": "SimpleDockerUI",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "productName": "SimpleDockerUI",
   "description": "Simple UI and Manager for Docker",
   "main": "main.js",
@@ -26,7 +26,8 @@
     "dockerui",
     "docker",
     "ui",
-    "devops"
+    "devops",
+    "manager"
   ],
   "author": "Felix",
   "license": "MIT",
@@ -35,11 +36,11 @@
   },
   "homepage": "https://github.com/felixgborrego/docker-ui-chrome-app",
   "devDependencies": {
-    "electron": "^1.4.6",
+    "electron": "^1.4.15",
     "electron-installer-debian": "^0.4.0",
     "electron-installer-dmg": "^0.1.2",
-    "electron-packager": "^8.3.0",
-    "electron-winstaller": "^2.5.1"
+    "electron-packager": "^8.5.2",
+    "electron-winstaller": "^2.5.2"
   },
   "dependencies": {
     "devtron": "^1.4.0",
@@ -47,7 +48,7 @@
     "split-ca": "^1.0.0",
     "universal-analytics": "0.4.6",
     "fs-plus": "*",
-    "rimraf": "*",
-    "yargs": "*"
+    "rimraf": "^2.6.0",
+    "yargs": "^6.6.0"
   }
 }

@@ -11,8 +11,6 @@ import scala.util.Try
  * This models match with the Json coming from the Docker Remote API.
  * Note: Docker Api use upper camel case, using here the same to make parsing easier.
  */
-
-
 case class Connection(url: String) {
   import util.StringUtils._
   def host = substringBefore(substringAfter(url, "://"), ":").replace("/var/run/docker.sock", "localhost")
@@ -28,12 +26,9 @@ case class DockerMetadata(connectionInfo: String,
 
 case class Info(Containers: Int,
                 Driver: String,
-                ExecutionDriver: String,
                 Images: Int,
-                IndexServerAddress: String,
                 KernelVersion: String,
                 MemTotal: Float,
-                NEventsListener: Int,
                 DriverStatus: Seq[Seq[String]] = Seq.empty,
                 OperatingSystem: String) {
 
