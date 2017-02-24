@@ -19,7 +19,7 @@ object SettingsPage extends Page {
   val id = "Settings"
 
   case class Props(ref: WorkbenchRef)
-  case class State(info: Info, error: Option[String] = None)
+  case class State(info: Info, error: Option[String] = None, message: Option[String] = None)
 
   case class Backend(t: BackendScope[Props, State]) {
     def onChange(connection: Connection)(e: ReactEventI) = {
@@ -29,6 +29,9 @@ object SettingsPage extends Page {
 
     def willMount(): Unit = {
       loadSelectedUrl()
+      PlatformService.current.checkIsLatestVersion { msg =>
+        t.modState(s => s.copy(message = Some(msg)))
+      }
     }
 
     def loadSelectedUrl(): Unit = {
@@ -128,6 +131,7 @@ object SettingsPageRender {
 
   def vdom(S: State, B: Backend) = <.div(
     S.error.map(Alert(_, None)),
+    S.message.map(Alert(_,None, "info")),
     <.div(^.className := "container  col-sm-12",
       <.div(^.className := "panel panel-default",
         <.div(^.className := "panel-heading clearfix",
@@ -258,8 +262,8 @@ object SettingsPageModel {
         case false => Connection(url, ConnectionInvalidApi)
       }.recover {
         case ex: Exception =>
-          log.info(s"Unable to connected to $url - ${ex.getMessage}")
-          Connection(url, ConnectionUnableToConnect, Some(ex.getMessage))
+          log.info(s"Unable to connected to $url - $ex -  ${ex.getMessage}")
+          Connection(url, ConnectionUnableToConnect, Some(s"Unable to connected to $url - ${ex.getMessage}"))
       }
     }
 

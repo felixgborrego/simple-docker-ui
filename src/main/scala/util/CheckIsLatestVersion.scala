@@ -22,6 +22,7 @@ object CheckIsLatestVersion {
   }
 
   var alreadyChecked = false
+  var checkMessage: Option[String] = None
 
   def check(callback: (String => Unit)): Unit = if (!alreadyChecked) {
     alreadyChecked = true
@@ -31,11 +32,15 @@ object CheckIsLatestVersion {
         log.info(s"Installed version $installed is the latest version")
       case latest =>
         log.info(s"Latest Version: $latest, installed: $installed")
-        callback(s"There is a new version available $latest")
+        val msg = s"There is a new version available $latest"
+        checkMessage = Some(msg)
+        callback(msg)
     }.onFailure {
       case ex: AjaxException =>
         log.info(s"Unable to fetch latest version - ${ex} - ${ex.xhr.responseText}")
     }
+  } else {
+    checkMessage.map(callback)
   }
 
 
