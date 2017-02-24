@@ -43,8 +43,8 @@
     "electron-winstaller": "^2.5.2"
   },
   "dependencies": {
-    "devtron": "^1.4.0",
-    "docker-modem": "^0.3.1",
+    "devtron": "1.4.0",
+    "docker-modem": "0.3.1",
     "split-ca": "^1.0.0",
     "universal-analytics": "0.4.6",
     "fs-plus": "*",
