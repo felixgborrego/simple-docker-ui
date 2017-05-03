@@ -53,7 +53,7 @@ Any feedback is more than welcome!
 *  Bower
 *  Momentjs
 
-###Contributing
+### Contributing
 
 Compile and test it yourself:
 
