@@ -71,7 +71,7 @@ object ContainersPageRender {
           <.h3(^.className := "panel-title pull-left")(<.span(^.className := iconClassName), " " + title),
           (showGC && containers.size > DockerClientConfig.KeepInGarbageCollection) ?= <.span(^.className := "pull-right",
             Button("Garbage Collection", "glyphicon-trash",
-              "Removes all unused containers, keeping the 10 recent once")(B.garbageCollection)
+              "Removes all unused containers, keeping the 10 most recent ones")(B.garbageCollection)
           ),
           showRefresh?= <.span(^.className := "pull-right",
             Button("Refresh", "glyphicon-refresh",
