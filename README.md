@@ -28,7 +28,7 @@ Any feedback is more than welcome!
 
 * Native app for Windows, MacOS and Linux.
 * Garbage collection for unused containers. Removing containers that haven't been in use for the last few days.
-* Garbage collection for unused images, Keeping only the once used by a container.
+* Garbage collection for unused images, keeping only the ones used by a container.
 * Virtual terminal to log into the container.
 * Search & pull images from the Docker Hub
 * Start/stop/delete containers
