@@ -68,5 +68,5 @@ Contributions are more than welcome. Bug reports with specific reproduction step
 All code is available to you under the MIT license, available at
 http://opensource.org/licenses/mit-license and also in the [COPYING](COPYING) file.
 
-Copyright the maintainers, 2015-2016.
+Copyright the maintainers, 2015-2017.
   
