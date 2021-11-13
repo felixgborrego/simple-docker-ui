@@ -1,3 +1,7 @@
+# DEPRECATED
+
+I decided to discontinue the development of this app to concentrate my efforts on other projects.
+
 ## Docker UI
  
 Simple Docker UI is an unofficial developer tool for monitoring and managing your Docker containers.
