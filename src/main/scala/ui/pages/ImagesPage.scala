@@ -163,7 +163,7 @@ object ImagesPageRender {
       <.div(^.className := "btn-group btn-group-justified",
         <.div(^.className := "btn-group",
           Button("Garbage Collection", "glyphicon-trash",
-            "Remove all unused images, keeping only the once used by a container")(B.garbageCollection)
+            "Remove all unused images, keeping only the ones used by a container")(B.garbageCollection)
         )
       )
     ))
