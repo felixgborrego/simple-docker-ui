@@ -1,11 +1,10 @@
-# DEPRECATED
-
-I decided to discontinue the development of this app to concentrate my efforts on other projects.
-
-## Docker UI
+# Docker UI
  
 Simple Docker UI is an unofficial developer tool for monitoring and managing your Docker containers.
 Available for OS X, Windows, ChromeOS and Linux
+
+> [!WARNING]  
+> This project is no longer maintained and has been archived. I have decided to discontinue its development to focus on other projects.
 
 * [Download Windows version](https://github.com/felixgborrego/docker-ui-chrome-app/releases) 
 * [Download OS X version](https://github.com/felixgborrego/docker-ui-chrome-app/releases) 
